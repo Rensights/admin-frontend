@@ -387,8 +387,8 @@ jobs:
           echo "Checking for stuck Helm releases..."
           RELEASE_STATUS=$(helm status admin-frontend -n ${DEV_NAMESPACE} 2>&1 || echo "not-found")
           
-          if echo "$RELEASE_STATUS" | grep -qE "(pending-install|pending-upgrade|pending-rollback)"; then
-            echo "⚠️  Found stuck Helm release, attempting cleanup..."
+          if echo "$RELEASE_STATUS" | grep -qE "(pending-install|pending-upgrade|pending-rollback|failed)"; then
+            echo "⚠️  Found stuck or failed Helm release, attempting cleanup..."
             helm rollback admin-frontend -n ${DEV_NAMESPACE} || true
             sleep 2
             helm delete admin-frontend -n ${DEV_NAMESPACE} || true
@@ -433,6 +433,7 @@ jobs:
             cat /tmp/extra-env-values.yaml
             
             set +e  # Don't exit on error, we'll handle it
+            # Deploy without --wait first to avoid timeout on initial deployment
             DEPLOY_OUTPUT=$(helm upgrade --install admin-frontend ./charts \
             --namespace ${DEV_NAMESPACE} \
             --create-namespace \
@@ -441,14 +442,47 @@ jobs:
             --set image.tag=${IMAGE_TAG} \
             --set image.repository=${REGISTRY}/${{ steps.image-repo.outputs.repo_owner }}/${{ steps.image-repo.outputs.repo_name }} \
             --set imagePullSecrets[0].name=ghcr-secret \
-            --wait --timeout=5m 2>&1)
+            --timeout=10m 2>&1)
             DEPLOY_EXIT_CODE=$?
             set -e  # Re-enable exit on error
             
             echo "Helm deployment exit code: $DEPLOY_EXIT_CODE"
             
             if [ $DEPLOY_EXIT_CODE -eq 0 ]; then
-              echo "✅ Deployment successful!"
+              echo "✅ Helm chart deployed, checking pod status..."
+              
+              # Wait for pod to be running (not necessarily ready)
+              echo "Waiting for pod to start..."
+              MAX_WAIT=300  # 5 minutes
+              ELAPSED=0
+              while [ $ELAPSED -lt $MAX_WAIT ]; do
+                POD_STATUS=$(kubectl get pods -n ${DEV_NAMESPACE} -l app.kubernetes.io/name=admin-frontend -o jsonpath='{.items[0].status.phase}' 2>/dev/null || echo "NotFound")
+                
+                if [ "$POD_STATUS" = "Running" ]; then
+                  echo "✅ Pod is Running!"
+                  kubectl get pods -n ${DEV_NAMESPACE} -l app.kubernetes.io/name=admin-frontend
+                  break
+                elif [ "$POD_STATUS" = "Pending" ] || [ "$POD_STATUS" = "ContainerCreating" ]; then
+                  echo "⏳ Pod status: $POD_STATUS (waiting... $ELAPSED/${MAX_WAIT}s)"
+                  sleep 5
+                  ELAPSED=$((ELAPSED + 5))
+                elif [ "$POD_STATUS" = "Error" ] || [ "$POD_STATUS" = "CrashLoopBackOff" ]; then
+                  echo "❌ Pod is in error state: $POD_STATUS"
+                  kubectl get pods -n ${DEV_NAMESPACE} -l app.kubernetes.io/name=admin-frontend
+                  kubectl describe pod -n ${DEV_NAMESPACE} -l app.kubernetes.io/name=admin-frontend | tail -50
+                  exit 1
+                else
+                  echo "⏳ Waiting for pod... (status: $POD_STATUS, elapsed: ${ELAPSED}s)"
+                  sleep 5
+                  ELAPSED=$((ELAPSED + 5))
+                fi
+              done
+              
+              if [ $ELAPSED -ge $MAX_WAIT ]; then
+                echo "⚠️  Timeout waiting for pod, but deployment was successful"
+                kubectl get pods -n ${DEV_NAMESPACE} -l app.kubernetes.io/name=admin-frontend
+              fi
+              
               echo "$DEPLOY_OUTPUT"
               break
             elif echo "$DEPLOY_OUTPUT" | grep -q "another operation (install/upgrade/rollback) is in progress"; then
@@ -491,6 +525,21 @@ jobs:
               echo "=== Pod Status ==="
               kubectl get pods -n ${DEV_NAMESPACE} -l app.kubernetes.io/name=admin-frontend 2>&1 || echo "No pods found"
               echo ""
+              
+              echo "=== Pod Events ==="
+              kubectl get events -n ${DEV_NAMESPACE} --sort-by='.lastTimestamp' | grep admin-frontend | tail -10 || echo "No events found"
+              echo ""
+              
+              echo "=== Deployment Description ==="
+              kubectl describe deployment admin-frontend -n ${DEV_NAMESPACE} 2>&1 | tail -30 || echo "Deployment not found"
+              echo ""
+              
+              # Check if failed release exists and clean it up
+              if echo "$DEPLOY_OUTPUT" | grep -q "timed out"; then
+                echo "⚠️  Deployment timed out. Cleaning up failed release..."
+                helm delete admin-frontend -n ${DEV_NAMESPACE} || true
+                sleep 3
+              fi
               
               RETRY_COUNT=$((RETRY_COUNT + 1))
               if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
