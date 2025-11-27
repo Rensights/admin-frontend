@@ -433,7 +433,7 @@ jobs:
             cat /tmp/extra-env-values.yaml
             
             set +e  # Don't exit on error, we'll handle it
-            # Deploy without --wait first to avoid timeout on initial deployment
+            # Deploy without --wait to avoid timeout, we'll check pod status manually
             DEPLOY_OUTPUT=$(helm upgrade --install admin-frontend ./charts \
             --namespace ${DEV_NAMESPACE} \
             --create-namespace \
@@ -442,7 +442,7 @@ jobs:
             --set image.tag=${IMAGE_TAG} \
             --set image.repository=${REGISTRY}/${{ steps.image-repo.outputs.repo_owner }}/${{ steps.image-repo.outputs.repo_name }} \
             --set imagePullSecrets[0].name=ghcr-secret \
-            --timeout=10m 2>&1)
+            2>&1)
             DEPLOY_EXIT_CODE=$?
             set -e  # Re-enable exit on error
             
