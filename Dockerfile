@@ -32,7 +32,9 @@ ENV NEXT_PUBLIC_MAIN_BACKEND_URL=""
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
+# Create public directory (Next.js may not have one, but we'll create it just in case)
+RUN mkdir -p ./public && chown nextjs:nodejs ./public
+
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
