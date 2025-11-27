@@ -1,0 +1,43 @@
+# Dev environment overrides for admin-frontend
+replicaCount: 1
+
+image:
+  repository: ghcr.io/rensights/admin-frontend
+  tag: ""  # Will be set by CI/CD with pipeline run number
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 3001
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+ingress:
+  enabled: true
+  className: "kong"
+  hosts:
+    - host: dev-admin.72.62.40.154.nip.io
+      paths:
+        - path: /
+          pathType: Prefix
+  annotations:
+    konghq.com/strip-path: "false"
+    konghq.com/protocols: "http"
+
+networkPolicy:
+  enabled: true
+  kongNamespaceLabels:
+    name: kong
+
+extraEnv:
+  # Admin API URL (admin-backend)
+  NEXT_PUBLIC_API_URL: "http://dev-admin-api.72.62.40.154.nip.io:31416"
+  # Main backend URL (for shared resources)
+  NEXT_PUBLIC_MAIN_BACKEND_URL: "http://dev-api.72.62.40.154.nip.io:31416"
+

@@ -1,0 +1,69 @@
+# Default values for admin-frontend
+replicaCount: 1
+
+image:
+  repository: ghcr.io/rensights/admin-frontend
+  tag: ""  # Will be set by CI/CD with pipeline run number
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+
+service:
+  type: ClusterIP
+  port: 3001
+
+ingress:
+  enabled: false
+  className: "kong"
+  annotations: {}
+  hosts:
+    - host: example.com
+      paths:
+        - path: /
+          pathType: Prefix
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 90
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 10
+  failureThreshold: 5
+
+extraEnv: {}
+
+secrets:
+  # Secret name containing frontend configuration
+  # Expected keys: NEXT_PUBLIC_API_URL, NEXT_PUBLIC_MAIN_BACKEND_URL
+  frontendConfig: admin-frontend-config
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+networkPolicy:
+  enabled: true
+  # Kong namespace labels to match
+  # Default matches namespace with label "name: kong"
+  kongNamespaceLabels:
+    name: kong
+

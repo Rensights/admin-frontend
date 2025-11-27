@@ -1,0 +1,98 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "admin-frontend.fullname" . }}
+  labels:
+    {{- include "admin-frontend.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      {{- include "admin-frontend.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        deployment.kubernetes.io/revision: "{{ .Release.Revision }}"
+      labels:
+        {{- include "admin-frontend.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "admin-frontend.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default "latest" }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            {{- /* Set NEXT_PUBLIC_API_URL: prefer extraEnv, fallback to secret */}}
+            {{- if hasKey .Values.extraEnv "NEXT_PUBLIC_API_URL" }}
+            - name: NEXT_PUBLIC_API_URL
+              value: {{ index .Values.extraEnv "NEXT_PUBLIC_API_URL" | quote }}
+            {{- else if .Values.secrets.frontendConfig }}
+            - name: NEXT_PUBLIC_API_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.frontendConfig }}
+                  key: NEXT_PUBLIC_API_URL
+                  optional: true
+            {{- end }}
+            {{- /* Set NEXT_PUBLIC_MAIN_BACKEND_URL: prefer extraEnv, fallback to secret */}}
+            {{- if hasKey .Values.extraEnv "NEXT_PUBLIC_MAIN_BACKEND_URL" }}
+            - name: NEXT_PUBLIC_MAIN_BACKEND_URL
+              value: {{ index .Values.extraEnv "NEXT_PUBLIC_MAIN_BACKEND_URL" | quote }}
+            {{- else if .Values.secrets.frontendConfig }}
+            - name: NEXT_PUBLIC_MAIN_BACKEND_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.frontendConfig }}
+                  key: NEXT_PUBLIC_MAIN_BACKEND_URL
+                  optional: true
+            {{- end }}
+            {{- /* Add all other extraEnv variables (excluding the ones we already handled) */}}
+            {{- range $key, $value := .Values.extraEnv }}
+            {{- if and (ne $key "NEXT_PUBLIC_API_URL") (ne $key "NEXT_PUBLIC_MAIN_BACKEND_URL") }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+          {{- if .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+
