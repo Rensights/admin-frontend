@@ -426,9 +426,33 @@ jobs:
             echo "Deploying with ADMIN_API_URL: $ADMIN_API_URL"
             echo "Deploying with MAIN_BACKEND_URL: $MAIN_BACKEND_URL"
             
+            # Check if NetworkPolicy exists and whether it's managed by Helm
+            NETWORK_POLICY_NAME="admin-frontend-allow-kong"
+            DISABLE_NP="false"
+            
+            # Check if NetworkPolicy exists at all
+            if kubectl get networkpolicy ${NETWORK_POLICY_NAME} -n ${DEV_NAMESPACE} >/dev/null 2>&1; then
+              # Check if it has Helm labels
+              HELM_MANAGED=$(kubectl get networkpolicy ${NETWORK_POLICY_NAME} -n ${DEV_NAMESPACE} -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}' 2>/dev/null || echo "")
+              
+              if [ "$HELM_MANAGED" = "Helm" ]; then
+                echo "✅ NetworkPolicy ${NETWORK_POLICY_NAME} exists and is managed by Helm. Continuing..."
+              else
+                echo "⚠️  NetworkPolicy ${NETWORK_POLICY_NAME} exists but is NOT managed by Helm. Disabling NetworkPolicy creation in Helm."
+                DISABLE_NP="true"
+              fi
+            else
+              echo "ℹ️  NetworkPolicy ${NETWORK_POLICY_NAME} does not exist. Helm will create it if enabled."
+            fi
+            
             # Create temporary values file with extraEnv to avoid --set parsing issues
-            printf 'extraEnv:\n  NEXT_PUBLIC_API_URL: "%s"\n  NEXT_PUBLIC_MAIN_BACKEND_URL: "%s"\n' \
-              "${ADMIN_API_URL}" "${MAIN_BACKEND_URL}" > /tmp/extra-env-values.yaml
+            if [ "$DISABLE_NP" = "true" ]; then
+              printf 'extraEnv:\n  NEXT_PUBLIC_API_URL: "%s"\n  NEXT_PUBLIC_MAIN_BACKEND_URL: "%s"\nnetworkPolicy:\n  enabled: false\n' \
+                "${ADMIN_API_URL}" "${MAIN_BACKEND_URL}" > /tmp/extra-env-values.yaml
+            else
+              printf 'extraEnv:\n  NEXT_PUBLIC_API_URL: "%s"\n  NEXT_PUBLIC_MAIN_BACKEND_URL: "%s"\n' \
+                "${ADMIN_API_URL}" "${MAIN_BACKEND_URL}" > /tmp/extra-env-values.yaml
+            fi
             echo "Created /tmp/extra-env-values.yaml with contents:"
             cat /tmp/extra-env-values.yaml
             
@@ -498,6 +522,20 @@ jobs:
                 echo "❌ Deployment failed after $MAX_RETRIES retries"
                 echo "Last error output:"
                 echo "$DEPLOY_OUTPUT"
+                exit 1
+              fi
+            elif echo "$DEPLOY_OUTPUT" | grep -q "NetworkPolicy.*already exists"; then
+              echo "⚠️  NetworkPolicy already exists without Helm ownership. Attempting to fix..."
+              NETWORK_POLICY_NAME="admin-frontend-allow-kong"
+              # Delete the existing NetworkPolicy and retry
+              kubectl delete networkpolicy ${NETWORK_POLICY_NAME} -n ${DEV_NAMESPACE} || true
+              echo "Deleted existing NetworkPolicy, will retry deployment..."
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "⚠️  Retrying in 3 seconds... (Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
+                sleep 3
+              else
+                echo "❌ Failed to resolve NetworkPolicy conflict after $MAX_RETRIES attempts"
                 exit 1
               fi
             else
