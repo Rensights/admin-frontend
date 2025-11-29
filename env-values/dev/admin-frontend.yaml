@@ -41,3 +41,9 @@ extraEnv:
   # Main backend URL (for shared resources)
   NEXT_PUBLIC_MAIN_BACKEND_URL: "http://dev-api.72.62.40.154.nip.io:31416"
 
+
+
+
+
+
+

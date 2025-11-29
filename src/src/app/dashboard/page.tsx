@@ -37,23 +37,31 @@ export default function AdminDashboard() {
           console.error("Stats error:", e);
           return null;
         }),
-        adminApiClient.getAllUsers().catch((e: any) => {
+        adminApiClient.getAllUsers(currentPage, 100).catch((e: any) => {
           console.error("Users error:", e);
-          return [];
+          return { content: [], totalElements: 0, totalPages: 0 };
         }),
-        adminApiClient.getAllSubscriptions().catch((e: any) => {
+        adminApiClient.getAllSubscriptions(currentPage, 100).catch((e: any) => {
           console.error("Subscriptions error:", e);
-          return [];
+          return { content: [], totalElements: 0, totalPages: 0 };
         }),
       ]);
       
       setStats(statsData);
       
-      if (usersData && Array.isArray(usersData)) {
+      if (usersData && usersData.content && Array.isArray(usersData.content)) {
+        setUsers(usersData.content);
+        setTotalPages(usersData.totalPages || 1);
+      } else if (Array.isArray(usersData)) {
+        // Fallback for non-paginated response
         setUsers(usersData);
+        setTotalPages(1);
       }
       
-      if (subscriptionsData && Array.isArray(subscriptionsData)) {
+      if (subscriptionsData && subscriptionsData.content && Array.isArray(subscriptionsData.content)) {
+        setSubscriptions(subscriptionsData.content);
+      } else if (Array.isArray(subscriptionsData)) {
+        // Fallback for non-paginated response
         setSubscriptions(subscriptionsData);
       }
     } catch (error: any) {

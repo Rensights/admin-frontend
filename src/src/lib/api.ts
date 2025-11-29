@@ -78,8 +78,15 @@ class AdminApiClient {
   }
 
   // User management endpoints
-  async getAllUsers(): Promise<User[]> {
-    return this.request<User[]>('/api/admin/users');
+  async getAllUsers(page: number = 0, size: number = 100): Promise<{ content: User[]; totalElements: number; totalPages: number }> {
+    const response = await this.request<any>(`/api/admin/users?page=${page}&size=${size}`);
+    // Handle both paginated response (Page) and array response
+    if (response.content && Array.isArray(response.content)) {
+      return response;
+    } else if (Array.isArray(response)) {
+      return { content: response, totalElements: response.length, totalPages: 1 };
+    }
+    return { content: [], totalElements: 0, totalPages: 0 };
   }
 
   async getUserById(userId: string): Promise<User> {
@@ -94,8 +101,15 @@ class AdminApiClient {
   }
 
   // Subscription management endpoints
-  async getAllSubscriptions(): Promise<Subscription[]> {
-    return this.request<Subscription[]>('/api/admin/subscriptions');
+  async getAllSubscriptions(page: number = 0, size: number = 100): Promise<{ content: Subscription[]; totalElements: number; totalPages: number }> {
+    const response = await this.request<any>(`/api/admin/subscriptions?page=${page}&size=${size}`);
+    // Handle both paginated response (Page) and array response
+    if (response.content && Array.isArray(response.content)) {
+      return response;
+    } else if (Array.isArray(response)) {
+      return { content: response, totalElements: response.length, totalPages: 1 };
+    }
+    return { content: [], totalElements: 0, totalPages: 0 };
   }
 
   // Dashboard stats
