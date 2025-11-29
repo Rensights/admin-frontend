@@ -78,8 +78,15 @@ class AdminApiClient {
   }
 
   // User management endpoints
-  async getAllUsers(page: number = 0, size: number = 100): Promise<{ content: User[]; totalElements: number; totalPages: number }> {
-    const response = await this.request<any>(`/api/admin/users?page=${page}&size=${size}`);
+  async getAllUsers(
+    page: number = 0, 
+    size: number = 100, 
+    sortBy: string = 'createdAt', 
+    sortDir: string = 'desc'
+  ): Promise<{ content: User[]; totalElements: number; totalPages: number }> {
+    const response = await this.request<any>(
+      `/api/admin/users?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`
+    );
     // Handle both paginated response (Page) and array response
     if (response.content && Array.isArray(response.content)) {
       return response;
@@ -93,16 +100,29 @@ class AdminApiClient {
     return this.request<User>(`/api/admin/users/${userId}`);
   }
 
-  async updateUser(userId: string, updates: Partial<User>): Promise<User> {
+  async updateUser(userId: string, updates: UpdateUserRequest): Promise<User> {
     return this.request<User>(`/api/admin/users/${userId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
   }
 
+  async deleteUser(userId: string): Promise<void> {
+    await this.request<{ message: string }>(`/api/admin/users/${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Subscription management endpoints
-  async getAllSubscriptions(page: number = 0, size: number = 100): Promise<{ content: Subscription[]; totalElements: number; totalPages: number }> {
-    const response = await this.request<any>(`/api/admin/subscriptions?page=${page}&size=${size}`);
+  async getAllSubscriptions(
+    page: number = 0, 
+    size: number = 100, 
+    sortBy: string = 'createdAt', 
+    sortDir: string = 'desc'
+  ): Promise<{ content: Subscription[]; totalElements: number; totalPages: number }> {
+    const response = await this.request<any>(
+      `/api/admin/subscriptions?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`
+    );
     // Handle both paginated response (Page) and array response
     if (response.content && Array.isArray(response.content)) {
       return response;
@@ -110,6 +130,16 @@ class AdminApiClient {
       return { content: response, totalElements: response.length, totalPages: 1 };
     }
     return { content: [], totalElements: 0, totalPages: 0 };
+  }
+
+  async getSubscriptionById(subscriptionId: string): Promise<Subscription> {
+    return this.request<Subscription>(`/api/admin/subscriptions/${subscriptionId}`);
+  }
+
+  async cancelSubscription(subscriptionId: string): Promise<Subscription> {
+    return this.request<Subscription>(`/api/admin/subscriptions/${subscriptionId}/cancel`, {
+      method: 'PUT',
+    });
   }
 
   // Dashboard stats
@@ -141,11 +171,13 @@ export interface User {
 export interface Subscription {
   id: string;
   userId: string;
+  userEmail?: string;
   planType: 'FREE' | 'PREMIUM' | 'ENTERPRISE';
   status: 'ACTIVE' | 'CANCELLED' | 'EXPIRED';
   startDate: string;
   endDate?: string;
-  createdAt: string;
+  createdAt?: string;
+  stripeSubscriptionId?: string;
 }
 
 export interface DashboardStats {
@@ -155,6 +187,16 @@ export interface DashboardStats {
   freeUsers: number;
   premiumUsers: number;
   enterpriseUsers: number;
+  activeUsers?: number;
+  verifiedUsers?: number;
+}
+
+export interface UpdateUserRequest {
+  firstName?: string;
+  lastName?: string;
+  userTier?: 'FREE' | 'PREMIUM' | 'ENTERPRISE';
+  isActive?: boolean;
+  emailVerified?: boolean;
 }
 
 export const adminApiClient = new AdminApiClient();

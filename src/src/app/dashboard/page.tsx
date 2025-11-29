@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { adminApiClient, User, Subscription, DashboardStats } from "@/lib/api";
+import { adminApiClient, User, Subscription, DashboardStats, UpdateUserRequest } from "@/lib/api";
 import "../dashboard.css";
 
 export default function AdminDashboard() {
@@ -14,10 +14,17 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'subscriptions'>('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [subscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
+  const [subscriptionPage, setSubscriptionPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [subscriptionTotalPages, setSubscriptionTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -26,7 +33,7 @@ export default function AdminDashboard() {
       return;
     }
     loadData();
-  }, [router, currentPage]);
+  }, [router, currentPage, subscriptionPage]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -37,11 +44,11 @@ export default function AdminDashboard() {
           console.error("Stats error:", e);
           return null;
         }),
-        adminApiClient.getAllUsers(currentPage, 100).catch((e: any) => {
+        adminApiClient.getAllUsers(currentPage, 20).catch((e: any) => {
           console.error("Users error:", e);
           return { content: [], totalElements: 0, totalPages: 0 };
         }),
-        adminApiClient.getAllSubscriptions(currentPage, 100).catch((e: any) => {
+        adminApiClient.getAllSubscriptions(subscriptionPage, 20).catch((e: any) => {
           console.error("Subscriptions error:", e);
           return { content: [], totalElements: 0, totalPages: 0 };
         }),
@@ -60,9 +67,11 @@ export default function AdminDashboard() {
       
       if (subscriptionsData && subscriptionsData.content && Array.isArray(subscriptionsData.content)) {
         setSubscriptions(subscriptionsData.content);
+        setSubscriptionTotalPages(subscriptionsData.totalPages || 1);
       } else if (Array.isArray(subscriptionsData)) {
         // Fallback for non-paginated response
         setSubscriptions(subscriptionsData);
+        setSubscriptionTotalPages(1);
       }
     } catch (error: any) {
       console.error("Error loading data:", error);
@@ -70,7 +79,7 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage]);
+  }, [currentPage, subscriptionPage]);
 
   const handleLogout = useCallback(() => {
     adminApiClient.logout();
@@ -81,7 +90,7 @@ export default function AdminDashboard() {
     setEditModalOpen(true);
   }, []);
 
-  const handleSaveUser = useCallback(async (updates: Partial<User>) => {
+  const handleSaveUser = useCallback(async (updates: UpdateUserRequest) => {
     if (!selectedUser) return;
     
     try {
@@ -89,10 +98,55 @@ export default function AdminDashboard() {
       setUsers(users.map(u => u.id === updated.id ? updated : u));
       setEditModalOpen(false);
       setSelectedUser(null);
+      setSuccessMessage("User updated successfully");
+      setTimeout(() => setSuccessMessage(null), 3000);
+      loadData(); // Reload to update stats
     } catch (error: any) {
-      alert(error.message || "Failed to update user");
+      setError(error.message || "Failed to update user");
     }
-  }, [selectedUser, users]);
+  }, [selectedUser, users, loadData]);
+
+  const handleDeleteUser = useCallback(async () => {
+    if (!selectedUser) return;
+    
+    try {
+      await adminApiClient.deleteUser(selectedUser.id);
+      setUsers(users.filter(u => u.id !== selectedUser.id));
+      setDeleteConfirmOpen(false);
+      setSelectedUser(null);
+      setSuccessMessage("User deactivated successfully");
+      setTimeout(() => setSuccessMessage(null), 3000);
+      loadData(); // Reload to update stats
+    } catch (error: any) {
+      setError(error.message || "Failed to delete user");
+    }
+  }, [selectedUser, users, loadData]);
+
+  const handleViewSubscription = useCallback(async (subscription: Subscription) => {
+    try {
+      const fullSubscription = await adminApiClient.getSubscriptionById(subscription.id);
+      setSelectedSubscription(fullSubscription);
+      setSubscriptionModalOpen(true);
+    } catch (error: any) {
+      setError(error.message || "Failed to load subscription details");
+    }
+  }, []);
+
+  const handleCancelSubscription = useCallback(async () => {
+    if (!selectedSubscription) return;
+    
+    try {
+      const cancelled = await adminApiClient.cancelSubscription(selectedSubscription.id);
+      setSubscriptions(subscriptions.map(s => s.id === cancelled.id ? cancelled : s));
+      setCancelConfirmOpen(false);
+      setSelectedSubscription(cancelled);
+      setSuccessMessage("Subscription cancelled successfully");
+      setTimeout(() => setSuccessMessage(null), 3000);
+      loadData(); // Reload to update stats
+    } catch (error: any) {
+      setError(error.message || "Failed to cancel subscription");
+    }
+  }, [selectedSubscription, subscriptions, loadData]);
 
   if (loading && !stats) {
     return (
@@ -183,6 +237,14 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {successMessage && (
+            <div className="success-banner">
+              <span>✅</span>
+              <span>{successMessage}</span>
+              <button onClick={() => setSuccessMessage(null)}>×</button>
+            </div>
+          )}
+
           {activeTab === 'overview' && stats && (
             <div className="overview-section">
               <div className="stats-grid">
@@ -228,6 +290,24 @@ export default function AdminDashboard() {
                     <div className="stat-value">{stats.enterpriseUsers.toLocaleString()}</div>
                   </div>
                 </div>
+                {stats.activeUsers !== undefined && (
+                  <div className="stat-card primary">
+                    <div className="stat-icon">✓</div>
+                    <div className="stat-content">
+                      <div className="stat-label">Active Users</div>
+                      <div className="stat-value">{stats.activeUsers.toLocaleString()}</div>
+                    </div>
+                  </div>
+                )}
+                {stats.verifiedUsers !== undefined && (
+                  <div className="stat-card success">
+                    <div className="stat-icon">✉️</div>
+                    <div className="stat-content">
+                      <div className="stat-label">Verified Users</div>
+                      <div className="stat-value">{stats.verifiedUsers.toLocaleString()}</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -292,12 +372,23 @@ export default function AdminDashboard() {
                             </span>
                           </td>
                           <td>
-                            <button 
-                              className="action-btn edit-btn"
-                              onClick={() => handleEditUser(user)}
-                            >
-                              Edit
-                            </button>
+                            <div className="action-buttons">
+                              <button 
+                                className="action-btn edit-btn"
+                                onClick={() => handleEditUser(user)}
+                              >
+                                Edit
+                              </button>
+                              <button 
+                                className="action-btn delete-btn"
+                                onClick={() => {
+                                  setSelectedUser(user);
+                                  setDeleteConfirmOpen(true);
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -356,7 +447,7 @@ export default function AdminDashboard() {
                     ) : (
                       subscriptions.map((sub) => (
                         <tr key={sub.id}>
-                          <td className="email-cell">{sub.userId || 'N/A'}</td>
+                          <td className="email-cell">{sub.userEmail || sub.userId || 'N/A'}</td>
                           <td>
                             <span className={`badge ${
                               sub.planType === 'PREMIUM' ? 'badge-premium' :
@@ -378,7 +469,25 @@ export default function AdminDashboard() {
                           <td>{new Date(sub.startDate).toLocaleDateString()}</td>
                           <td>{sub.endDate ? new Date(sub.endDate).toLocaleDateString() : 'N/A'}</td>
                           <td>
-                            <button className="action-btn view-btn">View</button>
+                            <div className="action-buttons">
+                              <button 
+                                className="action-btn view-btn"
+                                onClick={() => handleViewSubscription(sub)}
+                              >
+                                View
+                              </button>
+                              {sub.status === 'ACTIVE' && (
+                                <button 
+                                  className="action-btn cancel-btn"
+                                  onClick={() => {
+                                    setSelectedSubscription(sub);
+                                    setCancelConfirmOpen(true);
+                                  }}
+                                >
+                                  Cancel
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -386,6 +495,27 @@ export default function AdminDashboard() {
                   </tbody>
                 </table>
               </div>
+              {subscriptionTotalPages > 1 && (
+                <div className="pagination">
+                  <button
+                    onClick={() => setSubscriptionPage(p => Math.max(0, p - 1))}
+                    disabled={subscriptionPage === 0}
+                    className="pagination-btn"
+                  >
+                    Previous
+                  </button>
+                  <span className="pagination-info">
+                    Page {subscriptionPage + 1} of {subscriptionTotalPages}
+                  </span>
+                  <button
+                    onClick={() => setSubscriptionPage(p => Math.min(subscriptionTotalPages - 1, p + 1))}
+                    disabled={subscriptionPage >= subscriptionTotalPages - 1}
+                    className="pagination-btn"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -409,12 +539,167 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      {/* Subscription Details Modal */}
+      {subscriptionModalOpen && selectedSubscription && (
+        <div className="modal-overlay" onClick={() => setSubscriptionModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Subscription Details</h3>
+              <button className="modal-close" onClick={() => setSubscriptionModalOpen(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="detail-view">
+                <div className="detail-row">
+                  <span className="detail-label">Subscription ID:</span>
+                  <span className="detail-value">{selectedSubscription.id}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">User Email:</span>
+                  <span className="detail-value">{selectedSubscription.userEmail || selectedSubscription.userId || 'N/A'}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Plan Type:</span>
+                  <span className={`badge ${
+                    selectedSubscription.planType === 'PREMIUM' ? 'badge-premium' :
+                    selectedSubscription.planType === 'ENTERPRISE' ? 'badge-enterprise' :
+                    'badge-free'
+                  }`}>
+                    {selectedSubscription.planType}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Status:</span>
+                  <span className={`badge ${
+                    selectedSubscription.status === 'ACTIVE' ? 'badge-active' :
+                    selectedSubscription.status === 'CANCELLED' ? 'badge-cancelled' :
+                    'badge-expired'
+                  }`}>
+                    {selectedSubscription.status}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Start Date:</span>
+                  <span className="detail-value">{new Date(selectedSubscription.startDate).toLocaleString()}</span>
+                </div>
+                {selectedSubscription.endDate && (
+                  <div className="detail-row">
+                    <span className="detail-label">End Date:</span>
+                    <span className="detail-value">{new Date(selectedSubscription.endDate).toLocaleString()}</span>
+                  </div>
+                )}
+                {selectedSubscription.createdAt && (
+                  <div className="detail-row">
+                    <span className="detail-label">Created At:</span>
+                    <span className="detail-value">{new Date(selectedSubscription.createdAt).toLocaleString()}</span>
+                  </div>
+                )}
+                {selectedSubscription.stripeSubscriptionId && (
+                  <div className="detail-row">
+                    <span className="detail-label">Stripe Subscription ID:</span>
+                    <span className="detail-value">{selectedSubscription.stripeSubscriptionId}</span>
+                  </div>
+                )}
+              </div>
+              <div className="form-actions">
+                <button 
+                  type="button" 
+                  onClick={() => setSubscriptionModalOpen(false)} 
+                  className="btn-secondary"
+                >
+                  Close
+                </button>
+                {selectedSubscription.status === 'ACTIVE' && (
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setSubscriptionModalOpen(false);
+                      setCancelConfirmOpen(true);
+                    }}
+                    className="btn-danger"
+                  >
+                    Cancel Subscription
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {deleteConfirmOpen && selectedUser && (
+        <div className="modal-overlay" onClick={() => setDeleteConfirmOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Confirm Deletion</h3>
+              <button className="modal-close" onClick={() => setDeleteConfirmOpen(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p>Are you sure you want to deactivate user <strong>{selectedUser.email}</strong>? This action cannot be undone.</p>
+              <div className="form-actions">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setDeleteConfirmOpen(false);
+                    setSelectedUser(null);
+                  }} 
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleDeleteUser}
+                  className="btn-danger"
+                >
+                  Deactivate User
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Subscription Confirmation Modal */}
+      {cancelConfirmOpen && selectedSubscription && (
+        <div className="modal-overlay" onClick={() => setCancelConfirmOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Confirm Cancellation</h3>
+              <button className="modal-close" onClick={() => setCancelConfirmOpen(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p>Are you sure you want to cancel the subscription for <strong>{selectedSubscription.userEmail || selectedSubscription.userId}</strong>? The user will be downgraded to FREE tier.</p>
+              <div className="form-actions">
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setCancelConfirmOpen(false);
+                    setSelectedSubscription(null);
+                  }} 
+                  className="btn-secondary"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleCancelSubscription}
+                  className="btn-danger"
+                >
+                  Cancel Subscription
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // User Edit Form Component
-function UserEditForm({ user, onSave, onCancel }: { user: User; onSave: (updates: Partial<User>) => void; onCancel: () => void }) {
+function UserEditForm({ user, onSave, onCancel }: { user: User; onSave: (updates: UpdateUserRequest) => void; onCancel: () => void }) {
   const [firstName, setFirstName] = useState(user.firstName || '');
   const [lastName, setLastName] = useState(user.lastName || '');
   const [userTier, setUserTier] = useState<User['userTier']>(user.userTier);
