@@ -24,19 +24,25 @@ jobs:
     permissions:
       contents: read
       packages: read
-    env:
-      GIT_SUBMODULE_SKIP: 1
     steps:
+      - name: Setup Git to skip submodules
+        run: |
+          git config --global submodule.active false
+          git config --global submodule.recurse false
+          echo "✅ Git configured to skip submodules"
+      
+      - name: Setup Git to skip submodules
+        run: |
+          git config --global submodule.active false
+          git config --global submodule.recurse false
+          echo "✅ Git configured to skip submodules"
+      
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: false
           clean: true
-          sparse-checkout: |
-            *
-            !.gitmodules
-            !**/.gitmodules
       
       - name: Check src directory structure
         run: |
