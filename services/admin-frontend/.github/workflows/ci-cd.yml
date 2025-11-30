@@ -31,6 +31,14 @@ jobs:
           submodules: false
           fetch-depth: 0
       
+      - name: Disable submodule operations
+        run: |
+          git config --global --remove-section submodule 2>/dev/null || true
+          git config --local --remove-section submodule 2>/dev/null || true
+          rm -f .gitmodules
+          rm -rf .git/modules
+          echo "✅ Submodule operations disabled"
+      
       - name: Check src directory structure
         run: |
           echo "Checking src directory..."
