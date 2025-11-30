@@ -117,11 +117,12 @@ jobs:
       image_tag: ${{ github.run_number }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.1
+        uses: actions/checkout@v4
+        env:
+          GIT_SUBMODULE_SKIP: 1
         with:
           fetch-depth: 0
           submodules: false
-          clean: true
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -174,11 +175,12 @@ jobs:
       packages: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.1
+        uses: actions/checkout@v4
+        env:
+          GIT_SUBMODULE_SKIP: 1
         with:
           fetch-depth: 0
           submodules: false
-          clean: true
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
@@ -335,11 +337,12 @@ jobs:
       packages: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4.2.1
+        uses: actions/checkout@v4
+        env:
+          GIT_SUBMODULE_SKIP: 1
         with:
           fetch-depth: 0
           submodules: false
-          clean: true
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
