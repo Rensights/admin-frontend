@@ -27,17 +27,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        env:
+          GIT_SUBMODULE_SKIP: 1
         with:
           fetch-depth: 0
-      
-      - name: Remove .gitmodules if exists
-        run: |
-          if [ -f .gitmodules ]; then
-            echo "⚠️  Found .gitmodules, removing it"
-            rm -f .gitmodules
-          fi
-          git config --local --remove-section submodule 2>/dev/null || true
-          echo "✅ Submodule configuration removed"
+          submodules: false
       
       - name: Check src directory structure
         run: |
