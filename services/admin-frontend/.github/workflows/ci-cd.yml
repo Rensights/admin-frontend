@@ -28,11 +28,15 @@ jobs:
       GIT_SUBMODULE_SKIP: 1
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          submodules: false
-          clean: true
+        run: |
+          git config --global --add safe.directory /github/workspace
+          git clone --depth 1 --no-checkout https://github.com/${{ github.repository }}.git repo-temp
+          cd repo-temp
+          git checkout ${{ github.sha }}
+          cd ..
+          mv repo-temp/* repo-temp/.* . 2>/dev/null || true
+          rm -rf repo-temp
+          echo "✅ Repository checked out without submodules"
       
       - name: Check src directory structure
         run: |
