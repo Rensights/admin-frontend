@@ -30,6 +30,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           submodules: false
+          fetch-depth: 0
           submodules: false
       
       - name: Check src directory structure
@@ -120,6 +121,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           submodules: false
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -176,6 +178,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           submodules: false
+          fetch-depth: 0
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
@@ -336,6 +339,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           submodules: false
+          fetch-depth: 0
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v3
