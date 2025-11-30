@@ -24,14 +24,15 @@ jobs:
     permissions:
       contents: read
       packages: read
+    env:
+      GIT_SUBMODULE_SKIP: 1
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        env:
-          GIT_SUBMODULE_SKIP: 1
         with:
           fetch-depth: 0
           submodules: false
+          clean: true
       
       - name: Check src directory structure
         run: |
