@@ -159,35 +159,53 @@ export default function AnalysisRequestsPage() {
         </div>
       </aside>
 
-      <div className="dashboard-container">
-        <div className="dashboard-header">
-          <h1>Analysis Requests</h1>
-          <div className="header-actions">
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setCurrentPage(0);
-              }}
-              style={{ padding: '8px 12px', borderRadius: '4px', border: '1px solid #ddd' }}
-            >
-              <option value="ALL">All Status</option>
-              <option value="PENDING">Pending</option>
-              <option value="IN_PROGRESS">In Progress</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="CANCELLED">Cancelled</option>
-            </select>
+      {/* Main Content */}
+      <main className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+        {/* Top Header */}
+        <header className="top-header">
+          <div className="header-left">
+            <h2 className="page-title">Analysis Requests</h2>
           </div>
-        </div>
-
-        {error && (
-          <div className="error-message" style={{ margin: '20px', padding: '12px', background: '#fee', color: '#c33', borderRadius: '4px' }}>
-            {error}
+          <div className="header-right">
+            <div className="header-actions">
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(0);
+                }}
+                className="form-input"
+                style={{ minWidth: '150px' }}
+              >
+                <option value="ALL">All Status</option>
+                <option value="PENDING">Pending</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed</option>
+                <option value="CANCELLED">Cancelled</option>
+              </select>
+            </div>
+            <div className="user-info">
+              <span className="user-email">Admin</span>
+            </div>
           </div>
-        )}
+        </header>
 
-        <div className="table-container">
-          <table className="data-table">
+        {/* Content Area */}
+        <div className="content-area">
+          {error && (
+            <div className="error-banner">
+              <span>⚠️</span>
+              <span>{error}</span>
+              <button onClick={() => setError(null)}>×</button>
+            </div>
+          )}
+
+          <div className="table-section">
+            <div className="table-header">
+              <h3>All Analysis Requests</h3>
+            </div>
+            <div className="table-wrapper">
+              <table className="data-table">
             <thead>
               <tr>
                 <th>ID</th>
@@ -249,71 +267,77 @@ export default function AnalysisRequestsPage() {
               )}
             </tbody>
           </table>
-        </div>
-
-        {totalPages > 1 && (
-          <div className="pagination">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-              disabled={currentPage === 0}
-              className="btn btn-sm"
-            >
-              Previous
-            </button>
-            <span>
-              Page {currentPage + 1} of {totalPages} (Total: {totalElements})
-            </span>
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
-              disabled={currentPage >= totalPages - 1}
-              className="btn btn-sm"
-            >
-              Next
-            </button>
+            </div>
           </div>
-        )}
 
-        {detailModalOpen && selectedRequest && (
-          <div className="modal-overlay" onClick={() => setDetailModalOpen(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px', maxHeight: '90vh', overflow: 'auto' }}>
-              <div className="modal-header">
-                <h2>Analysis Request Details</h2>
-                <button onClick={() => setDetailModalOpen(false)} className="close-btn">×</button>
+          {totalPages > 1 && (
+            <div className="pagination">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+                disabled={currentPage === 0}
+                className="btn btn-sm"
+              >
+                Previous
+              </button>
+              <span>
+                Page {currentPage + 1} of {totalPages} (Total: {totalElements})
+              </span>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+                disabled={currentPage >= totalPages - 1}
+                className="btn btn-sm"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+      </main>
+
+      {detailModalOpen && selectedRequest && (
+        <div className="modal-overlay" onClick={() => setDetailModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px', maxHeight: '90vh', overflow: 'auto' }}>
+            <div className="modal-header">
+              <h3>Analysis Request Details</h3>
+              <button className="modal-close" onClick={() => setDetailModalOpen(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="form-group" style={{ marginBottom: '24px', padding: '16px', background: '#f8f9fa', borderRadius: '8px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50' }}>Status:</label>
+                <select
+                  value={selectedRequest.status}
+                  onChange={(e) => handleUpdateStatus(selectedRequest.id, e.target.value)}
+                  className="form-input"
+                  style={{ width: '200px' }}
+                >
+                  <option value="PENDING">Pending</option>
+                  <option value="IN_PROGRESS">In Progress</option>
+                  <option value="COMPLETED">Completed</option>
+                  <option value="CANCELLED">Cancelled</option>
+                </select>
               </div>
-              <div className="modal-body">
-                <div style={{ marginBottom: '20px' }}>
-                  <label>Status:</label>
-                  <select
-                    value={selectedRequest.status}
-                    onChange={(e) => handleUpdateStatus(selectedRequest.id, e.target.value)}
-                    style={{ marginLeft: '10px', padding: '6px', borderRadius: '4px' }}
-                  >
-                    <option value="PENDING">Pending</option>
-                    <option value="IN_PROGRESS">In Progress</option>
-                    <option value="COMPLETED">Completed</option>
-                    <option value="CANCELLED">Cancelled</option>
-                  </select>
-                </div>
 
-                <div className="detail-section">
-                  <h3>Contact Information</h3>
-                  <p><strong>Email:</strong> {selectedRequest.email}</p>
-                  {selectedRequest.userId && <p><strong>User ID:</strong> {selectedRequest.userId}</p>}
+              <div className="detail-section" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #e0e0e0' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#2c3e50', marginBottom: '16px' }}>Contact Information</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Email:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.email || 'N/A'}</span></p>
+                  {selectedRequest.userId && <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>User ID:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.userId}</span></p>}
                 </div>
+              </div>
 
-                <div className="detail-section">
-                  <h3>Property Information</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <p><strong>City:</strong> {selectedRequest.city}</p>
-                    <p><strong>Area:</strong> {selectedRequest.area}</p>
-                    <p><strong>Building:</strong> {selectedRequest.buildingName}</p>
-                    <p><strong>Type:</strong> {selectedRequest.propertyType}</p>
-                    <p><strong>Bedrooms:</strong> {selectedRequest.bedrooms || 'N/A'}</p>
-                    <p><strong>Size:</strong> {selectedRequest.size ? `${selectedRequest.size} sq ft` : 'N/A'}</p>
-                    {selectedRequest.plotSize && <p><strong>Plot Size:</strong> {selectedRequest.plotSize} sq ft</p>}
-                    <p><strong>Status:</strong> {selectedRequest.buildingStatus || 'N/A'}</p>
-                    <p><strong>Condition:</strong> {selectedRequest.condition || 'N/A'}</p>
-                  </div>
+              <div className="detail-section" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #e0e0e0' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#2c3e50', marginBottom: '16px' }}>Property Information</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>City:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.city || 'N/A'}</span></p>
+                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Area:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.area || 'N/A'}</span></p>
+                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Building:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.buildingName || 'N/A'}</span></p>
+                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Type:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.propertyType || 'N/A'}</span></p>
+                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Bedrooms:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.bedrooms || 'N/A'}</span></p>
+                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Size:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.size ? `${selectedRequest.size} sq ft` : 'N/A'}</span></p>
+                  {selectedRequest.plotSize && <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Plot Size:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.plotSize} sq ft</span></p>}
+                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Status:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.buildingStatus || 'N/A'}</span></p>
+                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Condition:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.condition || 'N/A'}</span></p>
+                </div>
                   {selectedRequest.listingUrl && (
                     <p><strong>Listing URL:</strong> <a href={selectedRequest.listingUrl} target="_blank" rel="noopener noreferrer">{selectedRequest.listingUrl}</a></p>
                   )}
@@ -332,64 +356,71 @@ export default function AnalysisRequestsPage() {
                   )}
                 </div>
 
-                <div className="detail-section">
-                  <h3>Financial Information</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <p><strong>Asking Price:</strong> {selectedRequest.askingPrice}</p>
-                    {selectedRequest.serviceCharge && <p><strong>Service Charge:</strong> {selectedRequest.serviceCharge}</p>}
-                    {selectedRequest.handoverDate && <p><strong>Handover Date:</strong> {selectedRequest.handoverDate}</p>}
-                    {selectedRequest.developer && <p><strong>Developer:</strong> {selectedRequest.developer}</p>}
-                    {selectedRequest.paymentPlan && <p><strong>Payment Plan:</strong> {selectedRequest.paymentPlan}</p>}
-                  </div>
-                </div>
-
-                {selectedRequest.features && selectedRequest.features.length > 0 && (
-                  <div className="detail-section">
-                    <h3>Features</h3>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {selectedRequest.features.map((feature, idx) => (
-                        <span key={idx} style={{ padding: '4px 8px', background: '#e8f4f8', borderRadius: '4px' }}>
-                          {feature}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {selectedRequest.additionalNotes && (
-                  <div className="detail-section">
-                    <h3>Additional Notes</h3>
-                    <p style={{ whiteSpace: 'pre-wrap' }}>{selectedRequest.additionalNotes}</p>
-                  </div>
-                )}
-
-                {selectedRequest.filePaths && selectedRequest.filePaths.length > 0 && (
-                  <div className="detail-section">
-                    <h3>Attached Files ({selectedRequest.filePaths.length})</h3>
-                    <ul>
-                      {selectedRequest.filePaths.map((path, idx) => (
-                        <li key={idx}>
-                          <a href={`${MAIN_BACKEND_URL}/api/analysis-requests/files/${encodeURIComponent(path)}`} target="_blank" rel="noopener noreferrer">
-                            {path.split('/').pop()}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                <div className="detail-section">
-                  <h3>Timestamps</h3>
-                  <p><strong>Created:</strong> {selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleString() : 'N/A'}</p>
-                  <p><strong>Updated:</strong> {selectedRequest.updatedAt ? new Date(selectedRequest.updatedAt).toLocaleString() : 'N/A'}</p>
+              <div className="detail-section" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #e0e0e0' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#2c3e50', marginBottom: '16px' }}>Financial Information</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Asking Price:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.askingPrice || 'N/A'}</span></p>
+                  {selectedRequest.serviceCharge && <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Service Charge:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.serviceCharge}</span></p>}
+                  {selectedRequest.handoverDate && <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Handover Date:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.handoverDate}</span></p>}
+                  {selectedRequest.developer && <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Developer:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.developer}</span></p>}
+                  {selectedRequest.paymentPlan && <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Payment Plan:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.paymentPlan}</span></p>}
                 </div>
               </div>
-              <div className="modal-footer">
-                <button onClick={() => setDetailModalOpen(false)} className="btn">Close</button>
+
+              {selectedRequest.features && selectedRequest.features.length > 0 && (
+                <div className="detail-section" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #e0e0e0' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#2c3e50', marginBottom: '16px' }}>Features</h3>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {selectedRequest.features.map((feature, idx) => (
+                      <span key={idx} style={{ padding: '6px 12px', background: 'linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.1))', borderRadius: '6px', color: '#e67e22', fontWeight: '500', fontSize: '0.9rem' }}>
+                        {feature}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedRequest.additionalNotes && (
+                <div className="detail-section" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #e0e0e0' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#2c3e50', marginBottom: '16px' }}>Additional Notes</h3>
+                  <p style={{ whiteSpace: 'pre-wrap', padding: '12px', background: '#f8f9fa', borderRadius: '8px', color: '#2c3e50', lineHeight: '1.6' }}>{selectedRequest.additionalNotes}</p>
+                </div>
+              )}
+
+              {selectedRequest.filePaths && selectedRequest.filePaths.length > 0 && (
+                <div className="detail-section" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #e0e0e0' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#2c3e50', marginBottom: '16px' }}>Attached Files ({selectedRequest.filePaths.length})</h3>
+                  <ul style={{ listStyle: 'none', padding: 0 }}>
+                    {selectedRequest.filePaths.map((path, idx) => (
+                      <li key={idx} style={{ margin: '8px 0', padding: '8px 12px', background: '#f8f9fa', borderRadius: '6px' }}>
+                        <a 
+                          href={`${MAIN_BACKEND_URL}/api/analysis-requests/files/${encodeURIComponent(path)}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{ color: '#e67e22', textDecoration: 'none', fontWeight: '500' }}
+                        >
+                          📎 {path.split('/').pop()}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="detail-section" style={{ marginBottom: '24px' }}>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#2c3e50', marginBottom: '16px' }}>Timestamps</h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Created:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleString() : 'N/A'}</span></p>
+                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Updated:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.updatedAt ? new Date(selectedRequest.updatedAt).toLocaleString() : 'N/A'}</span></p>
+                </div>
               </div>
             </div>
+            <div className="modal-footer" style={{ padding: '20px 28px', borderTop: '1px solid #e0e0e0', display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setDetailModalOpen(false)} className="btn btn-primary">Close</button>
+            </div>
           </div>
-        )}
+        </div>
+      )}
       </div>
     </div>
   );
