@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { adminApiClient, AnalysisRequest, PaginatedResponse } from "@/lib/api";
 import "../dashboard.css";
 
 export default function AnalysisRequestsPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [requests, setRequests] = useState<AnalysisRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<AnalysisRequest | null>(null);
@@ -76,6 +78,10 @@ export default function AnalysisRequestsPage() {
     }
   };
 
+  const handleLogout = () => {
+    adminApiClient.logout();
+  };
+
   if (loading && requests.length === 0) {
     return (
       <div className="dashboard-page">
@@ -89,6 +95,47 @@ export default function AnalysisRequestsPage() {
 
   return (
     <div className="dashboard-page">
+      {/* Sidebar */}
+      <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
+        <div className="sidebar-header">
+          <div className="logo-section">
+            <h1 className="logo">Rensights</h1>
+            <p className="logo-subtitle">Admin Panel</p>
+          </div>
+          <button 
+            className="sidebar-toggle"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label="Toggle sidebar"
+          >
+            {sidebarOpen ? '←' : '→'}
+          </button>
+        </div>
+
+        <nav className="sidebar-nav">
+          <button
+            className={`nav-item ${pathname === '/dashboard' ? 'active' : ''}`}
+            onClick={() => router.push('/dashboard')}
+          >
+            <span className="nav-icon">📊</span>
+            {sidebarOpen && <span className="nav-text">Dashboard</span>}
+          </button>
+          <button
+            className={`nav-item ${pathname === '/analysis-requests' ? 'active' : ''}`}
+            onClick={() => router.push('/analysis-requests')}
+          >
+            <span className="nav-icon">📋</span>
+            {sidebarOpen && <span className="nav-text">Analysis Requests</span>}
+          </button>
+        </nav>
+
+        <div className="sidebar-footer">
+          <button onClick={handleLogout} className="logout-btn-sidebar">
+            <span className="nav-icon">🚪</span>
+            {sidebarOpen && <span>Logout</span>}
+          </button>
+        </div>
+      </aside>
+
       <div className="dashboard-container">
         <div className="dashboard-header">
           <h1>Analysis Requests</h1>
