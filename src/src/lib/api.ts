@@ -146,6 +146,22 @@ class AdminApiClient {
   async getDashboardStats(): Promise<DashboardStats> {
     return this.request<DashboardStats>('/api/admin/stats');
   }
+
+  // Analysis request endpoints
+  async getAllAnalysisRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<AnalysisRequest>> {
+    return this.request<PaginatedResponse<AnalysisRequest>>(`/api/admin/analysis-requests?page=${page}&size=${size}`);
+  }
+
+  async getAnalysisRequestById(requestId: string): Promise<AnalysisRequest> {
+    return this.request<AnalysisRequest>(`/api/admin/analysis-requests/${requestId}`);
+  }
+
+  async updateAnalysisRequestStatus(requestId: string, status: string): Promise<AnalysisRequest> {
+    return this.request<AnalysisRequest>(`/api/admin/analysis-requests/${requestId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    });
+  }
 }
 
 export interface AdminAuthResponse {
@@ -197,6 +213,47 @@ export interface UpdateUserRequest {
   userTier?: 'FREE' | 'PREMIUM' | 'ENTERPRISE';
   isActive?: boolean;
   emailVerified?: boolean;
+}
+
+export interface PaginatedResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+
+export interface AnalysisRequest {
+  id: string;
+  userId?: string;
+  email: string;
+  city: string;
+  area: string;
+  buildingName: string;
+  listingUrl?: string;
+  propertyType: string;
+  bedrooms: string;
+  size?: string;
+  plotSize?: string;
+  floor?: string;
+  totalFloors?: string;
+  buildingStatus: string;
+  condition: string;
+  latitude?: string;
+  longitude?: string;
+  askingPrice?: string;
+  serviceCharge?: string;
+  handoverDate?: string;
+  developer?: string;
+  paymentPlan?: string;
+  features?: string[];
+  view?: string;
+  furnishing?: string;
+  additionalNotes?: string;
+  filePaths?: string[];
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const adminApiClient = new AdminApiClient();

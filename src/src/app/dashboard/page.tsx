@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { adminApiClient, User, Subscription, DashboardStats, UpdateUserRequest } from "@/lib/api";
 import "../dashboard.css";
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const pathname = usePathname();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
@@ -198,6 +199,13 @@ export default function AdminDashboard() {
           >
             <span className="nav-icon">💳</span>
             {sidebarOpen && <span className="nav-text">Subscriptions</span>}
+          </button>
+          <button
+            className={`nav-item ${pathname === '/analysis-requests' ? 'active' : ''}`}
+            onClick={() => router.push('/analysis-requests')}
+          >
+            <span className="nav-icon">📋</span>
+            {sidebarOpen && <span className="nav-text">Analysis Requests</span>}
           </button>
         </nav>
 
