@@ -26,25 +26,28 @@ export default function AnalysisRequestsPage() {
       return;
     }
     loadRequests();
-  }, [router, currentPage, statusFilter]);
+  }, [router, currentPage, statusFilter, loadRequests]);
 
   const loadRequests = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const response = await adminApiClient.getAllAnalysisRequests(currentPage, 20);
-      let filtered = response.content;
+      let filtered = response?.content || [];
       
       if (statusFilter !== "ALL") {
         filtered = filtered.filter(r => r.status === statusFilter);
       }
       
       setRequests(filtered);
-      setTotalPages(response.totalPages);
-      setTotalElements(response.totalElements);
+      setTotalPages(response?.totalPages || 1);
+      setTotalElements(response?.totalElements || 0);
     } catch (error: any) {
       console.error("Error loading analysis requests:", error);
       setError(error.message || "Failed to load analysis requests");
+      setRequests([]);
+      setTotalPages(1);
+      setTotalElements(0);
     } finally {
       setLoading(false);
     }
@@ -117,11 +120,31 @@ export default function AnalysisRequestsPage() {
             onClick={() => router.push('/dashboard')}
           >
             <span className="nav-icon">📊</span>
-            {sidebarOpen && <span className="nav-text">Dashboard</span>}
+            {sidebarOpen && <span className="nav-text">Overview</span>}
+          </button>
+          <button
+            className={`nav-item ${pathname === '/dashboard' ? 'active' : ''}`}
+            onClick={() => router.push('/dashboard')}
+          >
+            <span className="nav-icon">👥</span>
+            {sidebarOpen && <span className="nav-text">Users</span>}
+          </button>
+          <button
+            className={`nav-item ${pathname === '/dashboard' ? 'active' : ''}`}
+            onClick={() => router.push('/dashboard')}
+          >
+            <span className="nav-icon">💳</span>
+            {sidebarOpen && <span className="nav-text">Subscriptions</span>}
           </button>
           <button
             className={`nav-item ${pathname === '/analysis-requests' ? 'active' : ''}`}
-            onClick={() => router.push('/analysis-requests')}
+            onClick={() => {
+              try {
+                router.push('/analysis-requests');
+              } catch (error) {
+                console.error('Navigation error:', error);
+              }
+            }}
           >
             <span className="nav-icon">📋</span>
             {sidebarOpen && <span className="nav-text">Analysis Requests</span>}
@@ -187,16 +210,16 @@ export default function AnalysisRequestsPage() {
               ) : (
                 requests.map((request) => (
                   <tr key={request.id}>
-                    <td>{request.id.substring(0, 8)}...</td>
-                    <td>{request.email}</td>
+                    <td>{request.id ? request.id.substring(0, 8) + '...' : 'N/A'}</td>
+                    <td>{request.email || 'N/A'}</td>
                     <td>
-                      <div><strong>{request.buildingName}</strong></div>
+                      <div><strong>{request.buildingName || 'N/A'}</strong></div>
                       <div style={{ fontSize: '0.85em', color: '#666' }}>
-                        {request.propertyType} • {request.bedrooms} bed
+                        {request.propertyType || 'N/A'} • {request.bedrooms || 'N/A'} bed
                       </div>
                     </td>
-                    <td>{request.city}, {request.area}</td>
-                    <td>{request.askingPrice}</td>
+                    <td>{request.city || 'N/A'}, {request.area || 'N/A'}</td>
+                    <td>{request.askingPrice || 'N/A'}</td>
                     <td>
                       <span
                         style={{
@@ -211,7 +234,7 @@ export default function AnalysisRequestsPage() {
                         {request.status}
                       </span>
                     </td>
-                    <td>{new Date(request.createdAt).toLocaleDateString()}</td>
+                    <td>{request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'N/A'}</td>
                     <td>
                       <button
                         onClick={() => handleViewDetails(request)}
@@ -285,11 +308,11 @@ export default function AnalysisRequestsPage() {
                     <p><strong>Area:</strong> {selectedRequest.area}</p>
                     <p><strong>Building:</strong> {selectedRequest.buildingName}</p>
                     <p><strong>Type:</strong> {selectedRequest.propertyType}</p>
-                    <p><strong>Bedrooms:</strong> {selectedRequest.bedrooms}</p>
-                    <p><strong>Size:</strong> {selectedRequest.size} sq ft</p>
+                    <p><strong>Bedrooms:</strong> {selectedRequest.bedrooms || 'N/A'}</p>
+                    <p><strong>Size:</strong> {selectedRequest.size ? `${selectedRequest.size} sq ft` : 'N/A'}</p>
                     {selectedRequest.plotSize && <p><strong>Plot Size:</strong> {selectedRequest.plotSize} sq ft</p>}
-                    <p><strong>Status:</strong> {selectedRequest.buildingStatus}</p>
-                    <p><strong>Condition:</strong> {selectedRequest.condition}</p>
+                    <p><strong>Status:</strong> {selectedRequest.buildingStatus || 'N/A'}</p>
+                    <p><strong>Condition:</strong> {selectedRequest.condition || 'N/A'}</p>
                   </div>
                   {selectedRequest.listingUrl && (
                     <p><strong>Listing URL:</strong> <a href={selectedRequest.listingUrl} target="_blank" rel="noopener noreferrer">{selectedRequest.listingUrl}</a></p>
@@ -357,8 +380,8 @@ export default function AnalysisRequestsPage() {
 
                 <div className="detail-section">
                   <h3>Timestamps</h3>
-                  <p><strong>Created:</strong> {new Date(selectedRequest.createdAt).toLocaleString()}</p>
-                  <p><strong>Updated:</strong> {new Date(selectedRequest.updatedAt).toLocaleString()}</p>
+                  <p><strong>Created:</strong> {selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleString() : 'N/A'}</p>
+                  <p><strong>Updated:</strong> {selectedRequest.updatedAt ? new Date(selectedRequest.updatedAt).toLocaleString() : 'N/A'}</p>
                 </div>
               </div>
               <div className="modal-footer">
