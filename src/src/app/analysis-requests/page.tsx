@@ -421,7 +421,6 @@ export default function AnalysisRequestsPage() {
           </div>
         </div>
       )}
-      </div>
     </div>
   );
 }
