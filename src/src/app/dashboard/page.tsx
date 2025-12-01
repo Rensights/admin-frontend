@@ -69,9 +69,16 @@ export default function AdminDashboard() {
       if (subscriptionsData && subscriptionsData.content && Array.isArray(subscriptionsData.content)) {
         setSubscriptions(subscriptionsData.content);
         setSubscriptionTotalPages(subscriptionsData.totalPages || 1);
+        console.log("Subscriptions loaded:", subscriptionsData.content.length);
       } else if (Array.isArray(subscriptionsData)) {
         // Fallback for non-paginated response
         setSubscriptions(subscriptionsData);
+        setSubscriptionTotalPages(1);
+        console.log("Subscriptions loaded (array):", subscriptionsData.length);
+      } else {
+        // If subscriptionsData is null or unexpected format, set empty array
+        console.warn("Subscriptions data is null or unexpected format:", subscriptionsData);
+        setSubscriptions([]);
         setSubscriptionTotalPages(1);
       }
     } catch (error: any) {
@@ -432,6 +439,11 @@ export default function AdminDashboard() {
             <div className="table-section">
               <div className="table-header">
                 <h3>All Subscriptions</h3>
+                {loading && subscriptions.length === 0 && (
+                  <div style={{ fontSize: '0.9rem', color: '#666', marginTop: '8px' }}>
+                    Loading subscriptions...
+                  </div>
+                )}
               </div>
               <div className="table-wrapper">
                 <table className="data-table">
@@ -446,7 +458,14 @@ export default function AdminDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {subscriptions.length === 0 ? (
+                    {loading && subscriptions.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="empty-state" style={{ padding: '40px' }}>
+                          <div className="spinner" style={{ margin: '0 auto 10px' }}></div>
+                          Loading subscriptions...
+                        </td>
+                      </tr>
+                    ) : subscriptions.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="empty-state">
                           No subscriptions found
