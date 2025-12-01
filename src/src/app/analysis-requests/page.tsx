@@ -19,15 +19,6 @@ export default function AnalysisRequestsPage() {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
 
-  useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    loadRequests();
-  }, [router, currentPage, statusFilter, loadRequests]);
-
   const loadRequests = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -52,6 +43,15 @@ export default function AnalysisRequestsPage() {
       setLoading(false);
     }
   }, [currentPage, statusFilter]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('admin_token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    loadRequests();
+  }, [router, loadRequests]);
 
   const handleViewDetails = useCallback((request: AnalysisRequest) => {
     setSelectedRequest(request);
