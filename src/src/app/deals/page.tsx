@@ -23,15 +23,6 @@ export default function DealsPage() {
   const [selectedDeals, setSelectedDeals] = useState<Set<string>>(new Set());
   const [editingDeal, setEditingDeal] = useState<Partial<Deal>>({});
 
-  useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    loadDeals();
-  }, [pathname, router, currentPage, cityFilter, loadDeals]);
-
   const loadDeals = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -47,6 +38,15 @@ export default function DealsPage() {
       setLoading(false);
     }
   }, [currentPage, cityFilter]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('admin_token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    loadDeals();
+  }, [pathname, router, currentPage, cityFilter, loadDeals]);
 
   const handleViewDetails = useCallback((deal: Deal) => {
     setSelectedDeal(deal);

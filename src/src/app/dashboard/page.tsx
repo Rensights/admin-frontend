@@ -28,15 +28,6 @@ export default function AdminDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    loadData();
-  }, [pathname, router, currentPage, subscriptionPage, loadData]);
-
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -89,6 +80,15 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   }, [currentPage, subscriptionPage]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('admin_token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    loadData();
+  }, [pathname, router, currentPage, subscriptionPage, loadData]);
 
   const handleLogout = useCallback(() => {
     adminApiClient.logout();

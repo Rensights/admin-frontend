@@ -22,15 +22,6 @@ export default function AvailableDealsPage() {
   const [activeFilter, setActiveFilter] = useState<boolean | undefined>(undefined);
   const [editingDeal, setEditingDeal] = useState<Partial<Deal>>({});
 
-  useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    loadDeals();
-  }, [pathname, router, currentPage, cityFilter, activeFilter, loadDeals]);
-
   const loadDeals = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -46,6 +37,15 @@ export default function AvailableDealsPage() {
       setLoading(false);
     }
   }, [currentPage, cityFilter, activeFilter]);
+
+  useEffect(() => {
+    const token = localStorage.getItem('admin_token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    loadDeals();
+  }, [pathname, router, currentPage, cityFilter, activeFilter, loadDeals]);
 
   const handleViewDetails = useCallback((deal: Deal) => {
     setSelectedDeal(deal);
