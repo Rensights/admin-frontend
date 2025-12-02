@@ -263,6 +263,31 @@ export interface PaginatedResponse<T> {
   size: number;
 }
 
+export interface Deal {
+  id: string;
+  name: string;
+  location: string;
+  city: string;
+  area: string;
+  bedrooms: string;
+  bedroomCount?: string;
+  size: string;
+  listedPrice: string;
+  priceValue: number;
+  estimateMin?: number;
+  estimateMax?: number;
+  estimateRange?: string;
+  discount?: string;
+  rentalYield?: string;
+  buildingStatus: 'READY' | 'OFF_PLAN';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  batchDate?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface AnalysisRequest {
   id: string;
   userId?: string;
