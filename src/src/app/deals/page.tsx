@@ -211,46 +211,70 @@ export default function DealsPage() {
               </tr>
             </thead>
             <tbody>
-              {deals.map((deal) => (
-                <tr key={deal.id}>
-                  <td>
-                    <input
-                      type="checkbox"
-                      checked={selectedDeals.has(deal.id)}
-                      onChange={() => handleSelectDeal(deal.id)}
-                    />
-                  </td>
-                  <td>{deal.name || 'N/A'}</td>
-                  <td>{deal.location || 'N/A'}</td>
-                  <td>{deal.city || 'N/A'}</td>
-                  <td>{deal.bedrooms || 'N/A'}</td>
-                  <td>{deal.size || 'N/A'}</td>
-                  <td>{deal.listedPrice || 'N/A'}</td>
-                  <td>{deal.discount || 'N/A'}</td>
-                  <td>{deal.rentalYield || 'N/A'}</td>
-                  <td>
-                    <span className="status-badge" style={{ backgroundColor: '#f39c12' }}>
-                      {deal.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="action-buttons">
-                      <button className="btn-small" onClick={() => handleViewDetails(deal)}>
-                        View
-                      </button>
-                      <button className="btn-small" onClick={() => handleEdit(deal)}>
-                        Edit
-                      </button>
-                      <button className="btn-small btn-success" onClick={() => handleApprove(deal.id)}>
-                        Approve
-                      </button>
-                      <button className="btn-small btn-danger" onClick={() => handleReject(deal.id)}>
-                        Reject
-                      </button>
+              {loading && deals.length === 0 ? (
+                <tr>
+                  <td colSpan={11} style={{ textAlign: 'center', padding: '40px' }}>
+                    <div className="loading-container">
+                      <div className="spinner"></div>
+                      <p>Loading deals...</p>
                     </div>
                   </td>
                 </tr>
-              ))}
+              ) : error ? (
+                <tr>
+                  <td colSpan={11} style={{ textAlign: 'center', padding: '40px', color: '#e74c3c' }}>
+                    {error}
+                  </td>
+                </tr>
+              ) : deals.length === 0 ? (
+                <tr>
+                  <td colSpan={11} className="empty-state">
+                    <div>No pending deals found for today</div>
+                    <p>Deals will appear here once they are imported from external sources</p>
+                  </td>
+                </tr>
+              ) : (
+                deals.map((deal) => (
+                  <tr key={deal.id}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedDeals.has(deal.id)}
+                        onChange={() => handleSelectDeal(deal.id)}
+                      />
+                    </td>
+                    <td>{deal.name || 'N/A'}</td>
+                    <td>{deal.location || 'N/A'}</td>
+                    <td>{deal.city || 'N/A'}</td>
+                    <td>{deal.bedrooms || 'N/A'}</td>
+                    <td>{deal.size || 'N/A'}</td>
+                    <td>{deal.listedPrice || 'N/A'}</td>
+                    <td>{deal.discount || 'N/A'}</td>
+                    <td>{deal.rentalYield || 'N/A'}</td>
+                    <td>
+                      <span className="status-badge" style={{ backgroundColor: '#f39c12' }}>
+                        {deal.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="action-buttons">
+                        <button className="btn-small" onClick={() => handleViewDetails(deal)}>
+                          View
+                        </button>
+                        <button className="btn-small" onClick={() => handleEdit(deal)}>
+                          Edit
+                        </button>
+                        <button className="btn-small btn-success" onClick={() => handleApprove(deal.id)}>
+                          Approve
+                        </button>
+                        <button className="btn-small btn-danger" onClick={() => handleReject(deal.id)}>
+                          Reject
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
