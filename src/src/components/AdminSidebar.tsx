@@ -20,6 +20,7 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSideb
     { path: '/dashboard', icon: '📊', label: 'Overview' },
     { path: '/analysis-requests', icon: '📋', label: 'Analysis Requests' },
     { path: '/deals', icon: '🔥', label: "Today's Deals" },
+    { path: '/available-deals', icon: '✅', label: 'Available Deals' },
   ];
 
   return (
