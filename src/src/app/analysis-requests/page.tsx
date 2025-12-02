@@ -52,7 +52,7 @@ export default function AnalysisRequestsPage() {
       return;
     }
     loadRequests();
-  }, [router, loadRequests]);
+  }, [pathname, router, currentPage, statusFilter, loadRequests]);
 
   const handleViewDetails = useCallback((request: AnalysisRequest) => {
     setSelectedRequest(request);

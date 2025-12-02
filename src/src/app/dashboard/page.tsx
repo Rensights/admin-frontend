@@ -35,7 +35,7 @@ export default function AdminDashboard() {
       return;
     }
     loadData();
-  }, [router, currentPage, subscriptionPage]);
+  }, [pathname, router, currentPage, subscriptionPage, loadData]);
 
   const loadData = useCallback(async () => {
     setLoading(true);

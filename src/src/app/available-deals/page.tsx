@@ -29,7 +29,7 @@ export default function AvailableDealsPage() {
       return;
     }
     loadDeals();
-  }, [router, currentPage, cityFilter, activeFilter]);
+  }, [pathname, router, currentPage, cityFilter, activeFilter, loadDeals]);
 
   const loadDeals = useCallback(async () => {
     setLoading(true);

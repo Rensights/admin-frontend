@@ -30,7 +30,7 @@ export default function DealsPage() {
       return;
     }
     loadDeals();
-  }, [router, currentPage, cityFilter]);
+  }, [pathname, router, currentPage, cityFilter, loadDeals]);
 
   const loadDeals = useCallback(async () => {
     setLoading(true);
