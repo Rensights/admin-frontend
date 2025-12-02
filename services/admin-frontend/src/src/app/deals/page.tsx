@@ -191,6 +191,12 @@ export default function DealsPage() {
           >
             🔥 Today's Deals
           </button>
+          <button
+            className={pathname === '/available-deals' ? 'active' : ''}
+            onClick={() => router.push('/available-deals')}
+          >
+            ✅ Available Deals
+          </button>
         </nav>
         <div className="sidebar-footer">
           <button onClick={handleLogout}>Logout</button>

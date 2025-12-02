@@ -158,6 +158,34 @@ class AdminApiClient {
       method: 'POST',
     });
   }
+
+  async getApprovedDeals(page: number = 0, size: number = 20, city?: string, active?: boolean): Promise<PaginatedResponse<Deal>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+    if (city) params.append('city', city);
+    if (active !== undefined) params.append('active', active.toString());
+    return this.request<PaginatedResponse<Deal>>(`/api/admin/deals/approved?${params.toString()}`);
+  }
+
+  async deleteDeal(dealId: string): Promise<void> {
+    return this.request<void>(`/api/admin/deals/${dealId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async deactivateDeal(dealId: string): Promise<Deal> {
+    return this.request<Deal>(`/api/admin/deals/${dealId}/deactivate`, {
+      method: 'POST',
+    });
+  }
+
+  async activateDeal(dealId: string): Promise<Deal> {
+    return this.request<Deal>(`/api/admin/deals/${dealId}/activate`, {
+      method: 'POST',
+    });
+  }
 }
 
 export interface AdminAuthResponse {
@@ -242,6 +270,7 @@ export interface PaginatedResponse<T> {
 }
 
 export interface Deal {
+  active?: boolean;
   id: string;
   name: string;
   location: string;
