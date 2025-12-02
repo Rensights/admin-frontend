@@ -250,8 +250,7 @@ export default function DealsPage() {
                     </div>
                   </td>
                 </tr>
-                ))
-              )}
+              ))}
             </tbody>
           </table>
         </div>
