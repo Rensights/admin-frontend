@@ -1160,9 +1160,14 @@
 }
 
 /* Optimized deals page styles */
+.deals-page .main-content {
+  padding: 20px 32px;
+}
+
 .deals-page .table-container {
   margin: 0;
   padding: 24px;
+  overflow-x: auto;
 }
 
 .deals-page .page-header {
