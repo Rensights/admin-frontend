@@ -214,6 +214,13 @@ export default function AdminDashboard() {
             <span className="nav-icon">📋</span>
             {sidebarOpen && <span className="nav-text">Analysis Requests</span>}
           </button>
+          <button
+            className={`nav-item ${pathname === '/deals' ? 'active' : ''}`}
+            onClick={() => router.push('/deals')}
+          >
+            <span className="nav-icon">🔥</span>
+            {sidebarOpen && <span className="nav-text">Today's Deals</span>}
+          </button>
         </nav>
 
         <div className="sidebar-footer">
