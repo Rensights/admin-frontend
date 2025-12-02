@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { adminApiClient, AnalysisRequest, PaginatedResponse } from "@/lib/api";
+import AdminSidebar from "@/components/AdminSidebar";
 import "../dashboard.css";
 
 export default function AnalysisRequestsPage() {
@@ -99,65 +100,7 @@ export default function AnalysisRequestsPage() {
   return (
     <div className="dashboard-page">
       {/* Sidebar */}
-      <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
-        <div className="sidebar-header">
-          <div className="logo-section">
-            <h1 className="logo">Rensights</h1>
-            <p className="logo-subtitle">Admin Panel</p>
-          </div>
-          <button 
-            className="sidebar-toggle"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            aria-label="Toggle sidebar"
-          >
-            {sidebarOpen ? '←' : '→'}
-          </button>
-        </div>
-
-        <nav className="sidebar-nav">
-          <button
-            className={`nav-item ${pathname === '/dashboard' ? 'active' : ''}`}
-            onClick={() => router.push('/dashboard')}
-          >
-            <span className="nav-icon">📊</span>
-            {sidebarOpen && <span className="nav-text">Overview</span>}
-          </button>
-          <button
-            className={`nav-item ${pathname === '/dashboard' ? 'active' : ''}`}
-            onClick={() => router.push('/dashboard')}
-          >
-            <span className="nav-icon">👥</span>
-            {sidebarOpen && <span className="nav-text">Users</span>}
-          </button>
-          <button
-            className={`nav-item ${pathname === '/dashboard' ? 'active' : ''}`}
-            onClick={() => router.push('/dashboard')}
-          >
-            <span className="nav-icon">💳</span>
-            {sidebarOpen && <span className="nav-text">Subscriptions</span>}
-          </button>
-          <button
-            className={`nav-item ${pathname === '/analysis-requests' ? 'active' : ''}`}
-            onClick={() => {
-              try {
-                router.push('/analysis-requests');
-              } catch (error) {
-                console.error('Navigation error:', error);
-              }
-            }}
-          >
-            <span className="nav-icon">📋</span>
-            {sidebarOpen && <span className="nav-text">Analysis Requests</span>}
-          </button>
-        </nav>
-
-        <div className="sidebar-footer">
-          <button onClick={handleLogout} className="logout-btn-sidebar">
-            <span className="nav-icon">🚪</span>
-            {sidebarOpen && <span>Logout</span>}
-          </button>
-        </div>
-      </aside>
+      <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
       {/* Main Content */}
       <main className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
