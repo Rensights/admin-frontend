@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { adminApiClient, User, Subscription, DashboardStats, UpdateUserRequest } from "@/lib/api";
+import AdminSidebar from "@/components/AdminSidebar";
 import "../dashboard.css";
 
 export default function AdminDashboard() {
@@ -170,69 +171,74 @@ export default function AdminDashboard() {
   return (
     <div className="dashboard-page">
       {/* Sidebar */}
-      <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
-        <div className="sidebar-header">
-          <div className="logo-section">
-            <h1 className="logo">Rensights</h1>
-            <p className="logo-subtitle">Admin Panel</p>
-          </div>
-          <button 
-            className="sidebar-toggle"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            aria-label="Toggle sidebar"
-          >
-            {sidebarOpen ? '←' : '→'}
-          </button>
-        </div>
-
-        <nav className="sidebar-nav">
+      <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+      
+      {/* Dashboard Tabs Navigation */}
+      <div className="dashboard-tabs" style={{ 
+        position: 'fixed', 
+        left: sidebarOpen ? '280px' : '80px', 
+        top: '80px', 
+        right: '0', 
+        background: 'rgba(255, 255, 255, 0.98)', 
+        padding: '16px 32px', 
+        borderBottom: '1px solid #f0f0f0',
+        zIndex: 90,
+        transition: 'left 0.3s ease'
+      }}>
+        <div style={{ display: 'flex', gap: '12px' }}>
           <button
-            className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
+            className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
             onClick={() => setActiveTab('overview')}
+            style={{
+              padding: '10px 20px',
+              border: 'none',
+              borderRadius: '8px',
+              background: activeTab === 'overview' ? 'linear-gradient(135deg, #f39c12, #e67e22)' : 'white',
+              color: activeTab === 'overview' ? 'white' : '#555',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
           >
-            <span className="nav-icon">📊</span>
-            {sidebarOpen && <span className="nav-text">Overview</span>}
+            Overview
           </button>
           <button
-            className={`nav-item ${activeTab === 'users' ? 'active' : ''}`}
+            className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`}
             onClick={() => setActiveTab('users')}
+            style={{
+              padding: '10px 20px',
+              border: 'none',
+              borderRadius: '8px',
+              background: activeTab === 'users' ? 'linear-gradient(135deg, #f39c12, #e67e22)' : 'white',
+              color: activeTab === 'users' ? 'white' : '#555',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
           >
-            <span className="nav-icon">👥</span>
-            {sidebarOpen && <span className="nav-text">Users</span>}
+            Users
           </button>
           <button
-            className={`nav-item ${activeTab === 'subscriptions' ? 'active' : ''}`}
+            className={`tab-btn ${activeTab === 'subscriptions' ? 'active' : ''}`}
             onClick={() => setActiveTab('subscriptions')}
+            style={{
+              padding: '10px 20px',
+              border: 'none',
+              borderRadius: '8px',
+              background: activeTab === 'subscriptions' ? 'linear-gradient(135deg, #f39c12, #e67e22)' : 'white',
+              color: activeTab === 'subscriptions' ? 'white' : '#555',
+              fontWeight: 600,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
           >
-            <span className="nav-icon">💳</span>
-            {sidebarOpen && <span className="nav-text">Subscriptions</span>}
-          </button>
-          <button
-            className={`nav-item ${pathname === '/analysis-requests' ? 'active' : ''}`}
-            onClick={() => router.push('/analysis-requests')}
-          >
-            <span className="nav-icon">📋</span>
-            {sidebarOpen && <span className="nav-text">Analysis Requests</span>}
-          </button>
-          <button
-            className={`nav-item ${pathname === '/deals' ? 'active' : ''}`}
-            onClick={() => router.push('/deals')}
-          >
-            <span className="nav-icon">🔥</span>
-            {sidebarOpen && <span className="nav-text">Today's Deals</span>}
-          </button>
-        </nav>
-
-        <div className="sidebar-footer">
-          <button onClick={handleLogout} className="logout-btn-sidebar">
-            <span className="nav-icon">🚪</span>
-            {sidebarOpen && <span>Logout</span>}
+            Subscriptions
           </button>
         </div>
-      </aside>
+      </div>
 
       {/* Main Content */}
-      <main className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+      <main className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`} style={{ marginTop: '140px' }}>
         {/* Top Header */}
         <header className="top-header">
           <div className="header-left">
