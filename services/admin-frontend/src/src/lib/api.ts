@@ -118,6 +118,46 @@ class AdminApiClient {
       body: JSON.stringify({ status }),
     });
   }
+
+  // Deal management endpoints
+  async getPendingDeals(page: number = 0, size: number = 20, city?: string): Promise<PaginatedResponse<Deal>> {
+    const cityParam = city ? `&city=${encodeURIComponent(city)}` : '';
+    return this.request<PaginatedResponse<Deal>>(`/api/admin/deals/pending?page=${page}&size=${size}${cityParam}`);
+  }
+
+  async getTodayPendingDeals(page: number = 0, size: number = 20): Promise<PaginatedResponse<Deal>> {
+    return this.request<PaginatedResponse<Deal>>(`/api/admin/deals/pending/today?page=${page}&size=${size}`);
+  }
+
+  async getDealById(dealId: string): Promise<Deal> {
+    return this.request<Deal>(`/api/admin/deals/${dealId}`);
+  }
+
+  async updateDeal(dealId: string, updates: Partial<Deal>): Promise<Deal> {
+    return this.request<Deal>(`/api/admin/deals/${dealId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async approveDeal(dealId: string): Promise<Deal> {
+    return this.request<Deal>(`/api/admin/deals/${dealId}/approve`, {
+      method: 'POST',
+    });
+  }
+
+  async approveDeals(dealIds: string[]): Promise<{ approvedCount: number; deals: Deal[] }> {
+    return this.request<{ approvedCount: number; deals: Deal[] }>(`/api/admin/deals/batch-approve`, {
+      method: 'POST',
+      body: JSON.stringify({ dealIds }),
+    });
+  }
+
+  async rejectDeal(dealId: string): Promise<Deal> {
+    return this.request<Deal>(`/api/admin/deals/${dealId}/reject`, {
+      method: 'POST',
+    });
+  }
 }
 
 export interface AdminAuthResponse {
@@ -199,6 +239,31 @@ export interface PaginatedResponse<T> {
   totalPages: number;
   size: number;
   number: number;
+}
+
+export interface Deal {
+  id: string;
+  name: string;
+  location: string;
+  city: string;
+  area: string;
+  bedrooms: string;
+  bedroomCount?: string;
+  size: string;
+  listedPrice: string;
+  priceValue: number;
+  estimateMin?: number;
+  estimateMax?: number;
+  estimateRange?: string;
+  discount?: string;
+  rentalYield?: string;
+  buildingStatus: 'READY' | 'OFF_PLAN';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  batchDate?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const adminApiClient = new AdminApiClient();
