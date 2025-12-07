@@ -78,73 +78,29 @@ class AdminApiClient {
   }
 
   // User management endpoints
-  async getAllUsers(
-    page: number = 0, 
-    size: number = 100, 
-    sortBy: string = 'createdAt', 
-    sortDir: string = 'desc'
-  ): Promise<{ content: User[]; totalElements: number; totalPages: number }> {
-    const response = await this.request<any>(
-      `/api/admin/users?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`
-    );
-    // Handle both paginated response (Page) and array response
-    if (response.content && Array.isArray(response.content)) {
-      return response;
-    } else if (Array.isArray(response)) {
-      return { content: response, totalElements: response.length, totalPages: 1 };
-    }
-    return { content: [], totalElements: 0, totalPages: 0 };
+  async getAllUsers(): Promise<User[]> {
+    return this.request<User[]>('/api/admin/users');
   }
 
   async getUserById(userId: string): Promise<User> {
     return this.request<User>(`/api/admin/users/${userId}`);
   }
 
-  async updateUser(userId: string, updates: UpdateUserRequest): Promise<User> {
+  async updateUser(userId: string, updates: Partial<User>): Promise<User> {
     return this.request<User>(`/api/admin/users/${userId}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
   }
 
-  async deleteUser(userId: string): Promise<void> {
-    await this.request<{ message: string }>(`/api/admin/users/${userId}`, {
-      method: 'DELETE',
-    });
-  }
-
   // Subscription management endpoints
-  async getAllSubscriptions(
-    page: number = 0, 
-    size: number = 100, 
-    sortBy: string = 'createdAt', 
-    sortDir: string = 'desc'
-  ): Promise<{ content: Subscription[]; totalElements: number; totalPages: number }> {
-    const response = await this.request<any>(
-      `/api/admin/subscriptions?page=${page}&size=${size}&sortBy=${sortBy}&sortDir=${sortDir}`
-    );
-    // Handle both paginated response (Page) and array response
-    if (response.content && Array.isArray(response.content)) {
-      return response;
-    } else if (Array.isArray(response)) {
-      return { content: response, totalElements: response.length, totalPages: 1 };
-    }
-    return { content: [], totalElements: 0, totalPages: 0 };
-  }
-
-  async getSubscriptionById(subscriptionId: string): Promise<Subscription> {
-    return this.request<Subscription>(`/api/admin/subscriptions/${subscriptionId}`);
-  }
-
-  async cancelSubscription(subscriptionId: string): Promise<Subscription> {
-    return this.request<Subscription>(`/api/admin/subscriptions/${subscriptionId}/cancel`, {
-      method: 'PUT',
-    });
+  async getAllSubscriptions(): Promise<Subscription[]> {
+    return this.request<Subscription[]>('/api/admin/subscriptions');
   }
 
   // Dashboard stats
   async getDashboardStats(): Promise<DashboardStats> {
-    return this.request<DashboardStats>('/api/admin/stats');
+    return this.request<DashboardStats>('/api/admin/dashboard/stats');
   }
 
   // Analysis request endpoints
@@ -171,6 +127,15 @@ class AdminApiClient {
 
   async getTodayPendingDeals(page: number = 0, size: number = 20): Promise<PaginatedResponse<Deal>> {
     return this.request<PaginatedResponse<Deal>>(`/api/admin/deals/pending/today?page=${page}&size=${size}`);
+  }
+
+  async getRejectedDeals(page: number = 0, size: number = 20, city?: string): Promise<PaginatedResponse<Deal>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+    if (city) params.append('city', city);
+    return this.request<PaginatedResponse<Deal>>(`/api/admin/deals/rejected?${params.toString()}`);
   }
 
   async getDealById(dealId: string): Promise<Deal> {
@@ -211,15 +176,6 @@ class AdminApiClient {
     if (city) params.append('city', city);
     if (active !== undefined) params.append('active', active.toString());
     return this.request<PaginatedResponse<Deal>>(`/api/admin/deals/approved?${params.toString()}`);
-  }
-
-  async getRejectedDeals(page: number = 0, size: number = 20, city?: string): Promise<PaginatedResponse<Deal>> {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      size: size.toString(),
-    });
-    if (city) params.append('city', city);
-    return this.request<PaginatedResponse<Deal>>(`/api/admin/deals/rejected?${params.toString()}`);
   }
 
   async deleteDeal(dealId: string): Promise<void> {
@@ -264,13 +220,11 @@ export interface User {
 export interface Subscription {
   id: string;
   userId: string;
-  userEmail?: string;
   planType: 'FREE' | 'PREMIUM' | 'ENTERPRISE';
   status: 'ACTIVE' | 'CANCELLED' | 'EXPIRED';
   startDate: string;
   endDate?: string;
-  createdAt?: string;
-  stripeSubscriptionId?: string;
+  createdAt: string;
 }
 
 export interface DashboardStats {
@@ -280,50 +234,7 @@ export interface DashboardStats {
   freeUsers: number;
   premiumUsers: number;
   enterpriseUsers: number;
-  activeUsers?: number;
-  verifiedUsers?: number;
-}
-
-export interface UpdateUserRequest {
-  firstName?: string;
-  lastName?: string;
-  userTier?: 'FREE' | 'PREMIUM' | 'ENTERPRISE';
-  isActive?: boolean;
-  emailVerified?: boolean;
-}
-
-export interface PaginatedResponse<T> {
-  content: T[];
-  totalElements: number;
-  totalPages: number;
-  number: number;
-  size: number;
-}
-
-export interface Deal {
-  id: string;
-  name: string;
-  location: string;
-  city: string;
-  area: string;
-  active?: boolean;
-  bedrooms: string;
-  bedroomCount?: string;
-  size: string;
-  listedPrice: string;
-  priceValue: number;
-  estimateMin?: number;
-  estimateMax?: number;
-  estimateRange?: string;
-  discount?: string;
-  rentalYield?: string;
-  buildingStatus: 'READY' | 'OFF_PLAN';
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  batchDate?: string;
-  approvedAt?: string;
-  approvedBy?: string;
-  createdAt: string;
-  updatedAt: string;
+  pendingAnalysisRequests?: number;
 }
 
 export interface AnalysisRequest {
@@ -344,7 +255,7 @@ export interface AnalysisRequest {
   condition: string;
   latitude?: string;
   longitude?: string;
-  askingPrice?: string;
+  askingPrice: string;
   serviceCharge?: string;
   handoverDate?: string;
   developer?: string;
@@ -359,5 +270,38 @@ export interface AnalysisRequest {
   updatedAt: string;
 }
 
-export const adminApiClient = new AdminApiClient();
+export interface PaginatedResponse<T> {
+  content: T[];
+  totalElements: number;
+  totalPages: number;
+  size: number;
+  number: number;
+}
 
+export interface Deal {
+  active?: boolean;
+  id: string;
+  name: string;
+  location: string;
+  city: string;
+  area: string;
+  bedrooms: string;
+  bedroomCount?: string;
+  size: string;
+  listedPrice: string;
+  priceValue: number;
+  estimateMin?: number;
+  estimateMax?: number;
+  estimateRange?: string;
+  discount?: string;
+  rentalYield?: string;
+  buildingStatus: 'READY' | 'OFF_PLAN';
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  batchDate?: string;
+  approvedAt?: string;
+  approvedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const adminApiClient = new AdminApiClient();

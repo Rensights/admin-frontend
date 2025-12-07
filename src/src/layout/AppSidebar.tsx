@@ -11,7 +11,7 @@ import {
   UserCircleIcon,
   BoxIcon,
 } from "../icons/index";
-// import SidebarWidget from "./SidebarWidget";
+import SidebarWidget from "./SidebarWidget";
 
 type NavItem = {
   name: string;
@@ -24,14 +24,14 @@ const navItems: NavItem[] = [
   {
     icon: <GridIcon />,
     name: "Dashboard",
-    path: "/dashboard",
+    path: "/",
   },
   {
     icon: <UserCircleIcon />,
     name: "Users",
     subItems: [
-      { name: "User List", path: "/dashboard?tab=users", pro: false },
-      { name: "Subscriptions", path: "/dashboard?tab=subscriptions", pro: false },
+      { name: "User List", path: "/users/list", pro: false },
+      { name: "Subscriptions", path: "/users/subscriptions", pro: false },
     ],
   },
   {
@@ -214,31 +214,14 @@ const AppSidebar: React.FC = () => {
             }
           });
         }
-        // Also check if the parent path matches (for dashboard)
+        // Also check if the parent path matches
         if (nav.path && isActive(nav.path)) {
-          // For dashboard with query params, open users submenu if tab=users or tab=subscriptions
-          if (nav.path === '/dashboard' && pathname?.includes('tab=')) {
-            const tab = pathname.split('tab=')[1]?.split('&')[0];
-            if (tab === 'users' || tab === 'subscriptions') {
-              // Find Users item index
-              const usersIndex = navItems.findIndex(item => item.name === 'Users');
-              if (usersIndex !== -1) {
-                setOpenSubmenu({
-                  type: "main",
-                  index: usersIndex,
-                });
-                submenuMatched = true;
-              }
-            }
-          }
+          submenuMatched = true;
         }
       });
     });
 
-    // If no submenu item matches, close the open submenu
-    if (!submenuMatched && pathname && !pathname.startsWith('/dashboard')) {
-      setOpenSubmenu(null);
-    }
+    // If no submenu item matches, don't close (allow manual control)
   }, [pathname, isActive]);
 
   useEffect(() => {
@@ -287,7 +270,7 @@ const AppSidebar: React.FC = () => {
           !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
         }`}
       >
-        <Link href="/dashboard" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           {isExpanded || isHovered || isMobileOpen ? (
             <>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">Rensights</h1>
@@ -318,9 +301,25 @@ const AppSidebar: React.FC = () => {
               {renderMenuItems(navItems, "main")}
             </div>
 
+            <div className="">
+              <h2
+                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
+                  !isExpanded && !isHovered
+                    ? "lg:justify-center"
+                    : "justify-start"
+                }`}
+              >
+                {isExpanded || isHovered || isMobileOpen ? (
+                  "Others"
+                ) : (
+                  <HorizontaLDots />
+                )}
+              </h2>
+              {renderMenuItems(othersItems, "others")}
+            </div>
           </div>
         </nav>
-        {/* {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null} */}
+        {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}
       </div>
     </aside>
   );

@@ -1,9 +1,10 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
-import { adminApiClient } from "@/lib/api";
 import React, { useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
+import { adminApiClient } from "@/lib/api";
 
 export default function UserDropdown() {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,11 +23,16 @@ function toggleDropdown(e: React.MouseEvent<HTMLButtonElement, MouseEvent>) {
         onClick={toggleDropdown} 
         className="flex items-center text-gray-700 dark:text-gray-400 dropdown-toggle"
       >
-        <span className="mr-3 overflow-hidden rounded-full h-11 w-11 bg-brand-500 flex items-center justify-center">
-          <span className="text-white font-semibold">M</span>
+        <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
+          <Image
+            width={44}
+            height={44}
+            src="/images/user/owner.jpg"
+            alt="User"
+          />
         </span>
 
-        <span className="block mr-1 font-medium text-theme-sm">Musharof</span>
+          <span className="block mr-1 font-medium text-theme-sm">Admin</span>
 
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${

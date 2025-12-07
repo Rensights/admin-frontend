@@ -1,17 +1,12 @@
-import type { Metadata } from "next";
 import { Outfit } from 'next/font/google';
-import "./globals.css";
+import './globals.css';
+
 import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
 
 const outfit = Outfit({
   subsets: ["latin"],
 });
-
-export const metadata: Metadata = {
-  title: "Rensights Admin",
-  description: "Admin Dashboard for Rensights Platform",
-};
 
 export default function RootLayout({
   children,
@@ -28,4 +23,3 @@ export default function RootLayout({
     </html>
   );
 }
-
