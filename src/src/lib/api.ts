@@ -94,8 +94,8 @@ class AdminApiClient {
   }
 
   // Subscription management endpoints
-  async getAllSubscriptions(): Promise<Subscription[]> {
-    return this.request<Subscription[]>('/api/admin/subscriptions');
+  async getAllSubscriptions(page: number = 0, size: number = 20): Promise<PaginatedResponse<Subscription>> {
+    return this.request<PaginatedResponse<Subscription>>(`/api/admin/subscriptions?page=${page}&size=${size}`);
   }
 
   // Dashboard stats
