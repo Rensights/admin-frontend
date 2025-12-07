@@ -90,11 +90,22 @@
 
 .sidebar-nav {
   flex: 1;
-  padding: 16px 12px;
+  padding: 20px 16px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
   overflow-y: auto;
+}
+
+.sidebar-nav::before {
+  content: "MENU";
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+  padding: 0 12px;
 }
 
 .nav-item {
@@ -186,11 +197,441 @@
   flex-direction: column;
   min-height: 100vh;
   background: #f8fafc;
-  padding: 30px;
 }
 
 .main-content.sidebar-closed {
   margin-left: 80px;
+}
+
+/* Top Header Bar - TailAdmin exact style */
+.top-header-bar {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 20px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.search-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.search-trigger:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
+.search-text {
+  font-family: 'Monaco', 'Courier New', monospace;
+  font-size: 0.75rem;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-icon-wrapper {
+  position: relative;
+}
+
+.header-icon-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #64748b;
+}
+
+.header-icon-btn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.user-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.user-profile-btn:hover {
+  background: #e2e8f0;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.user-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+/* Dropdowns */
+.notification-dropdown,
+.user-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  min-width: 320px;
+  z-index: 100;
+  overflow: hidden;
+}
+
+.notification-dropdown {
+  min-width: 380px;
+}
+
+.dropdown-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dropdown-header h5 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.dropdown-body {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  padding: 12px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.2s ease;
+}
+
+.notification-item:hover {
+  background: #f8fafc;
+}
+
+.notification-title {
+  font-size: 0.875rem;
+  color: #1e293b;
+  margin: 0 0 4px 0;
+}
+
+.notification-meta {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.dropdown-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #e5e7eb;
+  text-align: center;
+}
+
+.view-all-link {
+  color: #3b82f6;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.view-all-link:hover {
+  text-decoration: underline;
+}
+
+.user-dropdown-header {
+  padding: 20px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-dropdown-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.user-dropdown-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 2px 0;
+}
+
+.user-dropdown-email {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.user-dropdown-body,
+.user-dropdown-footer {
+  padding: 8px 0;
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 10px 20px;
+  color: #64748b;
+  font-size: 0.875rem;
+  text-decoration: none;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+.logout-item {
+  color: #ef4444;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 8px;
+  padding-top: 12px;
+}
+
+.logout-item:hover {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* Dashboard Content Wrapper */
+.dashboard-content-wrapper {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+}
+
+/* Stats Grid - TailAdmin style */
+.stats-grid-tailadmin {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 24px;
+  margin-bottom: 30px;
+}
+
+.stat-card-tailadmin {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+}
+
+.stat-card-tailadmin:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.stat-card-header {
+  margin-bottom: 16px;
+}
+
+.stat-card-title {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #64748b;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-card-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.stat-card-footer {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-percentage {
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.stat-percentage.positive {
+  color: #10b981;
+  background: #d1fae5;
+}
+
+.stat-percentage.negative {
+  color: #ef4444;
+  background: #fee2e2;
+}
+
+/* Charts Grid - TailAdmin style */
+.charts-grid-tailadmin {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 24px;
+  margin-bottom: 30px;
+}
+
+.chart-card-tailadmin {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.chart-card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chart-card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+}
+
+.chart-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.card-action-btn {
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #64748b;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.card-action-btn:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+  border-color: #cbd5e1;
+}
+
+.chart-card-body {
+  padding: 24px;
+}
+
+.stats-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stat-summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.stat-summary-label {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.stat-summary-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
 }
 
 .top-header {
