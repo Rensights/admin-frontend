@@ -78,8 +78,8 @@ class AdminApiClient {
   }
 
   // User management endpoints
-  async getAllUsers(): Promise<User[]> {
-    return this.request<User[]>('/api/admin/users');
+  async getAllUsers(page: number = 0, size: number = 20): Promise<PaginatedResponse<User>> {
+    return this.request<PaginatedResponse<User>>(`/api/admin/users?page=${page}&size=${size}`);
   }
 
   async getUserById(userId: string): Promise<User> {

@@ -9,13 +9,27 @@ export default function UsersListPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const usersData = await adminApiClient.getAllUsers();
-      setUsers(usersData);
+      const response = await adminApiClient.getAllUsers(currentPage, 20);
+      // Handle paginated response
+      if (response && Array.isArray(response.content)) {
+        setUsers(response.content);
+        setTotalPages(response.totalPages || 1);
+        setTotalElements(response.totalElements || 0);
+      } else if (Array.isArray(response)) {
+        // Fallback: if response is already an array (backwards compatibility)
+        setUsers(response);
+      } else {
+        console.error("Unexpected response format:", response);
+        setError("Unexpected response format from server");
+      }
     } catch (error: any) {
       console.error("Error loading users:", error);
       setError(error.message || "Failed to load users");
@@ -26,7 +40,7 @@ export default function UsersListPage() {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, currentPage]);
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');

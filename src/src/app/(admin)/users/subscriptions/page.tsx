@@ -14,8 +14,18 @@ export default function SubscriptionsPage() {
     setLoading(true);
     setError(null);
     try {
-      const subscriptionsData = await adminApiClient.getAllSubscriptions();
-      setSubscriptions(subscriptionsData);
+      const response = await adminApiClient.getAllSubscriptions(currentPage, 20);
+      // Handle paginated response
+      if (response && Array.isArray(response.content)) {
+        setSubscriptions(response.content);
+        setTotalPages(response.totalPages || 1);
+      } else if (Array.isArray(response)) {
+        // Fallback: if response is already an array (backwards compatibility)
+        setSubscriptions(response);
+      } else {
+        console.error("Unexpected response format:", response);
+        setError("Unexpected response format from server");
+      }
     } catch (error: any) {
       console.error("Error loading subscriptions:", error);
       setError(error.message || "Failed to load subscriptions");
@@ -26,7 +36,7 @@ export default function SubscriptionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, currentPage]);
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
