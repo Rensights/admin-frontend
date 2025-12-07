@@ -3,13 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { adminApiClient, Deal } from "@/lib/api";
-import AdminSidebar from "@/components/AdminSidebar";
-import "../dashboard.css";
+import "../../dashboard.css";
 
 export default function AvailableDealsPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
@@ -141,26 +139,20 @@ export default function AvailableDealsPage() {
 
   if (loading && deals.length === 0) {
     return (
-      <div className="dashboard-page">
-        <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        <main className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-          <div className="loading-container">
-            <div className="spinner"></div>
-            <p>Loading deals...</p>
-          </div>
-        </main>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+          <p className="mt-4 text-gray-500">Loading deals...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-page">
-      <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-
-      <main className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-        <div className="page-header">
-          <h1>Available Deals</h1>
-          <p>Manage approved deals that are visible to users</p>
+    <div>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Available Deals</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage approved deals that are visible to users</p>
         </div>
 
         {error && (
@@ -648,7 +640,6 @@ export default function AvailableDealsPage() {
             </div>
           </div>
         )}
-      </main>
     </div>
   );
 }

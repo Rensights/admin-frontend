@@ -3,15 +3,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { adminApiClient, AnalysisRequest } from "@/lib/api";
-import AdminSidebar from "@/components/AdminSidebar";
-import "../dashboard.css";
+import "../../dashboard.css";
 
 const MAIN_BACKEND_URL = process.env.NEXT_PUBLIC_MAIN_BACKEND_URL || 'http://localhost:8080';
 
 export default function AnalysisRequestsPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [requests, setRequests] = useState<AnalysisRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<AnalysisRequest | null>(null);
@@ -87,28 +85,20 @@ export default function AnalysisRequestsPage() {
 
   if (loading && requests.length === 0) {
     return (
-      <div className="dashboard-page">
-        <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        <main className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-          <div className="loading-container">
-            <div className="spinner"></div>
-            <p>Loading analysis requests...</p>
-          </div>
-        </main>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+          <p className="mt-4 text-gray-500">Loading analysis requests...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-page">
-      <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-
-      <main className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-        <div className="page-header">
-          <div>
-            <h1>Analysis Requests</h1>
-            <p>Manage property analysis requests from users ({totalElements} total)</p>
-          </div>
+    <div>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Analysis Requests</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage property analysis requests from users ({totalElements} total)</p>
         </div>
 
         {error && (
@@ -460,7 +450,6 @@ export default function AnalysisRequestsPage() {
             </div>
           </div>
         )}
-      </main>
     </div>
   );
 }

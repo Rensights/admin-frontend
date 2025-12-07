@@ -3,13 +3,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { adminApiClient, Deal } from "@/lib/api";
-import AdminSidebar from "@/components/AdminSidebar";
-import "../dashboard.css";
+import "../../dashboard.css";
 
 export default function DealsPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
@@ -160,29 +158,23 @@ export default function DealsPage() {
 
   if (loading && deals.length === 0) {
     return (
-      <div className="dashboard-page">
-        <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-        <main className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-          <div className="loading-container">
-            <div className="spinner"></div>
-            <p>Loading deals...</p>
-          </div>
-        </main>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+          <p className="mt-4 text-gray-500">Loading deals...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-page">
-      <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
-
-      <main className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-        <div className="page-header">
+    <div>
+        <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1>Today's Deals</h1>
-            <p>Pending deals awaiting approval ({totalElements} total)</p>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Today's Deals</h1>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Pending deals awaiting approval ({totalElements} total)</p>
           </div>
-          <div className="header-actions">
+          <div className="flex gap-2">
             {selectedDeals.size > 0 && (
               <button 
                 className="btn-primary" 
@@ -640,7 +632,6 @@ export default function DealsPage() {
             </div>
           </div>
         )}
-      </main>
     </div>
   );
 }
