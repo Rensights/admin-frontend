@@ -36,8 +36,8 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSideb
       icon: '👥',
       label: 'Users',
       children: [
-        { path: '/users/list', icon: '📋', label: 'User List' },
-        { path: '/users/subscriptions', icon: '💳', label: 'Subscriptions' },
+        { path: '/dashboard?tab=users', icon: '📋', label: 'User List' },
+        { path: '/dashboard?tab=subscriptions', icon: '💳', label: 'Subscriptions' },
       ]
     },
     { path: '/analysis-requests', icon: '📋', label: 'Analysis Requests' },
@@ -46,8 +46,8 @@ export default function AdminSidebar({ sidebarOpen, setSidebarOpen }: AdminSideb
       icon: '🔥',
       label: 'Deals',
       children: [
-        { path: '/deals/today', icon: '🔥', label: "Today's Deals" },
-        { path: '/deals/available', icon: '✅', label: 'Available Deals' },
+        { path: '/deals', icon: '🔥', label: "Today's Deals" },
+        { path: '/available-deals', icon: '✅', label: 'Available Deals' },
         { path: '/deals/archive', icon: '📦', label: 'Archive Deals' },
       ]
     },
