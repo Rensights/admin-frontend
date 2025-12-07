@@ -19,7 +19,6 @@ export default function DealsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [cityFilter, setCityFilter] = useState<string>("");
   const [selectedDeals, setSelectedDeals] = useState<Set<string>>(new Set());
   const [editingDeal, setEditingDeal] = useState<Partial<Deal>>({});
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
@@ -40,7 +39,7 @@ export default function DealsPage() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, cityFilter]);
+  }, [currentPage]);
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -49,7 +48,7 @@ export default function DealsPage() {
       return;
     }
     loadDeals();
-  }, [pathname, router, currentPage, cityFilter, loadDeals]);
+  }, [pathname, router, currentPage, loadDeals]);
 
   const handleViewDetails = useCallback((deal: Deal) => {
     setSelectedDeal(deal);
@@ -206,29 +205,7 @@ export default function DealsPage() {
           </div>
         )}
 
-        {/* Filters */}
-        {cityFilter && (
-          <div className="filters-section">
-            <div className="filters-grid">
-              <div className="filter-group">
-                <label htmlFor="city-filter">City</label>
-                <select
-                  id="city-filter"
-                  className="filter-select"
-                  value={cityFilter}
-                  onChange={(e) => {
-                    setCityFilter(e.target.value);
-                    setCurrentPage(0);
-                  }}
-                >
-                  <option value="">All Cities</option>
-                  <option value="dubai">Dubai</option>
-                  <option value="abudhabi">Abu Dhabi</option>
-                </select>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Filters - Removed for now as the API doesn't support city filtering for pending deals */}
 
         {/* Deals Table */}
         <div className="table-section">
