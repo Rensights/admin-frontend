@@ -213,6 +213,15 @@ class AdminApiClient {
     return this.request<PaginatedResponse<Deal>>(`/api/admin/deals/approved?${params.toString()}`);
   }
 
+  async getRejectedDeals(page: number = 0, size: number = 20, city?: string): Promise<PaginatedResponse<Deal>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      size: size.toString(),
+    });
+    if (city) params.append('city', city);
+    return this.request<PaginatedResponse<Deal>>(`/api/admin/deals/rejected?${params.toString()}`);
+  }
+
   async deleteDeal(dealId: string): Promise<void> {
     return this.request<void>(`/api/admin/deals/${dealId}`, {
       method: 'DELETE',

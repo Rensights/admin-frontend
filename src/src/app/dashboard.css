@@ -1676,3 +1676,142 @@
   margin-top: 16px;
   font-size: 0.9rem;
 }
+
+/* Nested Navigation Styles */
+.nav-section {
+  margin-bottom: 4px;
+}
+
+.nav-section-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-expand-icon {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-left: auto;
+  transition: transform 0.2s ease;
+}
+
+.nav-section-header.active .nav-expand-icon {
+  opacity: 1;
+}
+
+.nav-section-children {
+  margin-top: 4px;
+  margin-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 12px;
+  border-left: 2px solid rgba(243, 156, 18, 0.2);
+}
+
+.nav-child-item {
+  padding-left: 32px !important;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.nav-child-item:hover {
+  opacity: 1;
+}
+
+.nav-child-item.active {
+  background: rgba(243, 156, 18, 0.15) !important;
+  border-left: 3px solid #f39c12;
+  opacity: 1;
+}
+
+/* Dashboard Charts Styles */
+.dashboard-overview {
+  animation: fadeIn 0.4s ease;
+}
+
+.charts-section {
+  margin-top: 32px;
+}
+
+.chart-card {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  margin-bottom: 24px;
+}
+
+.chart-header {
+  margin-bottom: 24px;
+}
+
+.chart-header h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 4px;
+}
+
+.chart-header p {
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.charts-container {
+  width: 100%;
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.chart-item {
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.chart-item h4 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.chart-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  color: #7f8c8d;
+  font-size: 1rem;
+}
+
+/* Page Header Styles */
+.page-header {
+  margin-bottom: 32px;
+}
+
+.page-header h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #2c3e50;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #e67e22, #d35400);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.page-header p {
+  color: #7f8c8d;
+  font-size: 1rem;
+}
