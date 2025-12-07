@@ -1503,14 +1503,6 @@
   gap: 12px;
   align-items: center;
 }
-  letter-spacing: -0.5px;
-}
-
-.header-actions {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
 
 .status-badge {
   display: inline-flex;
