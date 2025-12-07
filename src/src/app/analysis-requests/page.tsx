@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { adminApiClient, AnalysisRequest, PaginatedResponse } from "@/lib/api";
+import { adminApiClient, AnalysisRequest } from "@/lib/api";
 import AdminSidebar from "@/components/AdminSidebar";
 import "../dashboard.css";
+
+const MAIN_BACKEND_URL = process.env.NEXT_PUBLIC_MAIN_BACKEND_URL || 'http://localhost:8080';
 
 export default function AnalysisRequestsPage() {
   const router = useRouter();
@@ -68,57 +70,68 @@ export default function AnalysisRequestsPage() {
         setSelectedRequest(updated);
       }
     } catch (error: any) {
-      alert(error.message || "Failed to update status");
+      setError(error.message || "Failed to update status");
+      setTimeout(() => setError(null), 5000);
     }
   }, [loadRequests, selectedRequest]);
 
-  const getStatusColor = (status: string) => {
+  const getStatusBadgeClass = (status: string) => {
     switch (status) {
-      case 'PENDING': return '#f39c12';
-      case 'IN_PROGRESS': return '#3498db';
-      case 'COMPLETED': return '#27ae60';
-      case 'CANCELLED': return '#e74c3c';
-      default: return '#95a5a6';
+      case 'PENDING': return 'status-badge-pending';
+      case 'IN_PROGRESS': return 'status-badge-in-progress';
+      case 'COMPLETED': return 'status-badge-completed';
+      case 'CANCELLED': return 'status-badge-cancelled';
+      default: return 'status-badge';
     }
-  };
-
-  const handleLogout = () => {
-    adminApiClient.logout();
   };
 
   if (loading && requests.length === 0) {
     return (
       <div className="dashboard-page">
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <p>Loading analysis requests...</p>
-        </div>
+        <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+        <main className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+          <div className="loading-container">
+            <div className="spinner"></div>
+            <p>Loading analysis requests...</p>
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
     <div className="dashboard-page">
-      {/* Sidebar */}
       <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      {/* Main Content */}
       <main className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-        {/* Top Header */}
-        <header className="top-header">
-          <div className="header-left">
-            <h2 className="page-title">Analysis Requests</h2>
+        <div className="page-header">
+          <div>
+            <h1>Analysis Requests</h1>
+            <p>Manage property analysis requests from users ({totalElements} total)</p>
           </div>
-          <div className="header-right">
-            <div className="header-actions">
+        </div>
+
+        {error && (
+          <div className="error-message">
+            <span>⚠️</span>
+            <span>{error}</span>
+            <button onClick={() => setError(null)}>×</button>
+          </div>
+        )}
+
+        {/* Filters */}
+        <div className="filters-section">
+          <div className="filters-grid">
+            <div className="filter-group">
+              <label htmlFor="status-filter">Status</label>
               <select
+                id="status-filter"
+                className="filter-select"
                 value={statusFilter}
                 onChange={(e) => {
                   setStatusFilter(e.target.value);
                   setCurrentPage(0);
                 }}
-                className="form-input"
-                style={{ minWidth: '150px' }}
               >
                 <option value="ALL">All Status</option>
                 <option value="PENDING">Pending</option>
@@ -127,246 +140,327 @@ export default function AnalysisRequestsPage() {
                 <option value="CANCELLED">Cancelled</option>
               </select>
             </div>
-            <div className="user-info">
-              <span className="user-email">Admin</span>
-            </div>
           </div>
-        </header>
-
-        {/* Content Area */}
-        <div className="content-area">
-          {error && (
-            <div className="error-banner">
-              <span>⚠️</span>
-              <span>{error}</span>
-              <button onClick={() => setError(null)}>×</button>
-            </div>
-          )}
-
-          <div className="table-section">
-            <div className="table-header">
-              <h3>All Analysis Requests</h3>
-            </div>
-            <div className="table-wrapper">
-              <table className="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Email</th>
-                <th>Property</th>
-                <th>Location</th>
-                <th>Asking Price</th>
-                <th>Status</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {requests.length === 0 ? (
-                <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '40px' }}>
-                    No analysis requests found
-                  </td>
-                </tr>
-              ) : (
-                requests.map((request) => (
-                  <tr key={request.id}>
-                    <td>{request.id ? request.id.substring(0, 8) + '...' : 'N/A'}</td>
-                    <td>{request.email || 'N/A'}</td>
-                    <td>
-                      <div><strong>{request.buildingName || 'N/A'}</strong></div>
-                      <div style={{ fontSize: '0.85em', color: '#666' }}>
-                        {request.propertyType || 'N/A'} • {request.bedrooms || 'N/A'} bed
-                      </div>
-                    </td>
-                    <td>{request.city || 'N/A'}, {request.area || 'N/A'}</td>
-                    <td>{request.askingPrice || 'N/A'}</td>
-                    <td>
-                      <span
-                        style={{
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          background: getStatusColor(request.status) + '20',
-                          color: getStatusColor(request.status),
-                          fontWeight: '600',
-                          fontSize: '0.85em'
-                        }}
-                      >
-                        {request.status}
-                      </span>
-                    </td>
-                    <td>{request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'N/A'}</td>
-                    <td>
-                      <button
-                        onClick={() => handleViewDetails(request)}
-                        className="btn btn-sm"
-                        style={{ marginRight: '8px' }}
-                      >
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-            </div>
-          </div>
-
-          {totalPages > 1 && (
-            <div className="pagination">
-              <button
-                onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-                disabled={currentPage === 0}
-                className="btn btn-sm"
-              >
-                Previous
-              </button>
-              <span>
-                Page {currentPage + 1} of {totalPages} (Total: {totalElements})
-              </span>
-              <button
-                onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
-                disabled={currentPage >= totalPages - 1}
-                className="btn btn-sm"
-              >
-                Next
-              </button>
-            </div>
-          )}
         </div>
-      </main>
 
-      {detailModalOpen && selectedRequest && (
-        <div className="modal-overlay" onClick={() => setDetailModalOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px', maxHeight: '90vh', overflow: 'auto' }}>
-            <div className="modal-header">
-              <h3>Analysis Request Details</h3>
-              <button className="modal-close" onClick={() => setDetailModalOpen(false)}>×</button>
+        {/* Requests Table */}
+        <div className="table-section">
+          <div className="table-header">
+            <h3>All Analysis Requests</h3>
+            <div className="table-actions">
+              <span className="pagination-info">
+                Showing {requests.length > 0 ? currentPage * 20 + 1 : 0} - {Math.min((currentPage + 1) * 20, totalElements)} of {totalElements}
+              </span>
             </div>
-            <div className="modal-body">
-              <div className="form-group" style={{ marginBottom: '24px', padding: '16px', background: '#f8f9fa', borderRadius: '8px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600', color: '#2c3e50' }}>Status:</label>
-                <select
-                  value={selectedRequest.status}
-                  onChange={(e) => handleUpdateStatus(selectedRequest.id, e.target.value)}
-                  className="form-input"
-                  style={{ width: '200px' }}
-                >
-                  <option value="PENDING">Pending</option>
-                  <option value="IN_PROGRESS">In Progress</option>
-                  <option value="COMPLETED">Completed</option>
-                  <option value="CANCELLED">Cancelled</option>
-                </select>
+          </div>
+          <div className="table-wrapper">
+            {loading && requests.length === 0 ? (
+              <div className="loading-container" style={{ padding: '60px' }}>
+                <div className="spinner"></div>
+                <p>Loading analysis requests...</p>
               </div>
-
-              <div className="detail-section" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #e0e0e0' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#2c3e50', marginBottom: '16px' }}>Contact Information</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Email:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.email || 'N/A'}</span></p>
-                  {selectedRequest.userId && <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>User ID:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.userId}</span></p>}
-                </div>
+            ) : requests.length === 0 ? (
+              <div className="empty-state">
+                <div>No analysis requests found</div>
+                <p>Requests will appear here when users submit property analysis requests</p>
               </div>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Email</th>
+                    <th>Property</th>
+                    <th>Location</th>
+                    <th>Asking Price</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {requests.map((request) => (
+                    <tr key={request.id}>
+                      <td className="request-id-cell">
+                        {request.id ? request.id.substring(0, 8) + '...' : 'N/A'}
+                      </td>
+                      <td className="email-cell">{request.email || 'N/A'}</td>
+                      <td>
+                        <div className="deal-property-name">{request.buildingName || 'N/A'}</div>
+                        <div className="deal-property-meta">
+                          {request.propertyType || 'N/A'} • {request.bedrooms || 'N/A'} bed
+                        </div>
+                      </td>
+                      <td>
+                        {request.city || 'N/A'}{request.area ? `, ${request.area}` : ''}
+                      </td>
+                      <td>{request.askingPrice || 'N/A'}</td>
+                      <td>
+                        <span className={`status-badge ${getStatusBadgeClass(request.status)}`}>
+                          {request.status}
+                        </span>
+                      </td>
+                      <td>
+                        {request.createdAt ? new Date(request.createdAt).toLocaleDateString() : 'N/A'}
+                      </td>
+                      <td>
+                        <div className="action-buttons">
+                          <button
+                            className="btn-small view-btn"
+                            onClick={() => handleViewDetails(request)}
+                          >
+                            View
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
 
-              <div className="detail-section" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #e0e0e0' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#2c3e50', marginBottom: '16px' }}>Property Information</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>City:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.city || 'N/A'}</span></p>
-                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Area:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.area || 'N/A'}</span></p>
-                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Building:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.buildingName || 'N/A'}</span></p>
-                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Type:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.propertyType || 'N/A'}</span></p>
-                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Bedrooms:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.bedrooms || 'N/A'}</span></p>
-                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Size:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.size ? `${selectedRequest.size} sq ft` : 'N/A'}</span></p>
-                  {selectedRequest.plotSize && <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Plot Size:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.plotSize} sq ft</span></p>}
-                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Status:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.buildingStatus || 'N/A'}</span></p>
-                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Condition:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.condition || 'N/A'}</span></p>
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="pagination">
+            <button
+              className="pagination-btn"
+              onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+              disabled={currentPage === 0}
+            >
+              Previous
+            </button>
+            <span className="pagination-info">
+              Page {currentPage + 1} of {totalPages} (Total: {totalElements})
+            </span>
+            <button
+              className="pagination-btn"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+              disabled={currentPage >= totalPages - 1}
+            >
+              Next
+            </button>
+          </div>
+        )}
+
+        {/* Detail Modal */}
+        {detailModalOpen && selectedRequest && (
+          <div className="modal-overlay" onClick={() => setDetailModalOpen(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '900px', maxHeight: '90vh', overflow: 'auto' }}>
+              <div className="modal-header">
+                <h3>Analysis Request Details</h3>
+                <button className="modal-close" onClick={() => setDetailModalOpen(false)}>×</button>
+              </div>
+              <div className="modal-body">
+                {/* Status Update */}
+                <div className="status-update-section">
+                  <label className="form-group-label">Status:</label>
+                  <select
+                    value={selectedRequest.status}
+                    onChange={(e) => handleUpdateStatus(selectedRequest.id, e.target.value)}
+                    className="form-input status-select"
+                  >
+                    <option value="PENDING">Pending</option>
+                    <option value="IN_PROGRESS">In Progress</option>
+                    <option value="COMPLETED">Completed</option>
+                    <option value="CANCELLED">Cancelled</option>
+                  </select>
                 </div>
+
+                {/* Contact Information */}
+                <div className="detail-section">
+                  <h4 className="detail-section-title">Contact Information</h4>
+                  <div className="deal-detail-grid">
+                    <div className="deal-detail-item">
+                      <div className="deal-detail-label">Email</div>
+                      <div className="deal-detail-value">{selectedRequest.email || 'N/A'}</div>
+                    </div>
+                    {selectedRequest.userId && (
+                      <div className="deal-detail-item">
+                        <div className="deal-detail-label">User ID</div>
+                        <div className="deal-detail-value">{selectedRequest.userId}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Property Information */}
+                <div className="detail-section">
+                  <h4 className="detail-section-title">Property Information</h4>
+                  <div className="deal-detail-grid">
+                    <div className="deal-detail-item">
+                      <div className="deal-detail-label">City</div>
+                      <div className="deal-detail-value">{selectedRequest.city || 'N/A'}</div>
+                    </div>
+                    <div className="deal-detail-item">
+                      <div className="deal-detail-label">Area</div>
+                      <div className="deal-detail-value">{selectedRequest.area || 'N/A'}</div>
+                    </div>
+                    <div className="deal-detail-item">
+                      <div className="deal-detail-label">Building</div>
+                      <div className="deal-detail-value">{selectedRequest.buildingName || 'N/A'}</div>
+                    </div>
+                    <div className="deal-detail-item">
+                      <div className="deal-detail-label">Type</div>
+                      <div className="deal-detail-value">{selectedRequest.propertyType || 'N/A'}</div>
+                    </div>
+                    <div className="deal-detail-item">
+                      <div className="deal-detail-label">Bedrooms</div>
+                      <div className="deal-detail-value">{selectedRequest.bedrooms || 'N/A'}</div>
+                    </div>
+                    <div className="deal-detail-item">
+                      <div className="deal-detail-label">Size</div>
+                      <div className="deal-detail-value">
+                        {selectedRequest.size ? `${selectedRequest.size} sq ft` : 'N/A'}
+                      </div>
+                    </div>
+                    {selectedRequest.plotSize && (
+                      <div className="deal-detail-item">
+                        <div className="deal-detail-label">Plot Size</div>
+                        <div className="deal-detail-value">{selectedRequest.plotSize} sq ft</div>
+                      </div>
+                    )}
+                    <div className="deal-detail-item">
+                      <div className="deal-detail-label">Status</div>
+                      <div className="deal-detail-value">{selectedRequest.buildingStatus || 'N/A'}</div>
+                    </div>
+                    <div className="deal-detail-item">
+                      <div className="deal-detail-label">Condition</div>
+                      <div className="deal-detail-value">{selectedRequest.condition || 'N/A'}</div>
+                    </div>
+                  </div>
                   {selectedRequest.listingUrl && (
-                    <p><strong>Listing URL:</strong> <a href={selectedRequest.listingUrl} target="_blank" rel="noopener noreferrer">{selectedRequest.listingUrl}</a></p>
+                    <div className="link-item">
+                      <strong>Listing URL:</strong>{' '}
+                      <a href={selectedRequest.listingUrl} target="_blank" rel="noopener noreferrer" className="external-link">
+                        {selectedRequest.listingUrl}
+                      </a>
+                    </div>
                   )}
                   {selectedRequest.latitude && selectedRequest.longitude && (
-                    <p>
-                      <strong>Location:</strong> {selectedRequest.latitude}, {selectedRequest.longitude}
-                      {' '}
+                    <div className="link-item">
+                      <strong>Location:</strong>{' '}
+                      {selectedRequest.latitude}, {selectedRequest.longitude}{' '}
                       <a
                         href={`https://www.openstreetmap.org/?mlat=${selectedRequest.latitude}&mlon=${selectedRequest.longitude}&zoom=15`}
                         target="_blank"
                         rel="noopener noreferrer"
+                        className="external-link"
                       >
                         View on Map
                       </a>
-                    </p>
+                    </div>
                   )}
                 </div>
 
-              <div className="detail-section" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #e0e0e0' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#2c3e50', marginBottom: '16px' }}>Financial Information</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Asking Price:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.askingPrice || 'N/A'}</span></p>
-                  {selectedRequest.serviceCharge && <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Service Charge:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.serviceCharge}</span></p>}
-                  {selectedRequest.handoverDate && <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Handover Date:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.handoverDate}</span></p>}
-                  {selectedRequest.developer && <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Developer:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.developer}</span></p>}
-                  {selectedRequest.paymentPlan && <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Payment Plan:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.paymentPlan}</span></p>}
-                </div>
-              </div>
-
-              {selectedRequest.features && selectedRequest.features.length > 0 && (
-                <div className="detail-section" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #e0e0e0' }}>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#2c3e50', marginBottom: '16px' }}>Features</h3>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {selectedRequest.features.map((feature, idx) => (
-                      <span key={idx} style={{ padding: '6px 12px', background: 'linear-gradient(135deg, rgba(243, 156, 18, 0.1), rgba(230, 126, 34, 0.1))', borderRadius: '6px', color: '#e67e22', fontWeight: '500', fontSize: '0.9rem' }}>
-                        {feature}
-                      </span>
-                    ))}
+                {/* Financial Information */}
+                <div className="detail-section">
+                  <h4 className="detail-section-title">Financial Information</h4>
+                  <div className="deal-detail-grid">
+                    <div className="deal-detail-item">
+                      <div className="deal-detail-label">Asking Price</div>
+                      <div className="deal-detail-value">{selectedRequest.askingPrice || 'N/A'}</div>
+                    </div>
+                    {selectedRequest.serviceCharge && (
+                      <div className="deal-detail-item">
+                        <div className="deal-detail-label">Service Charge</div>
+                        <div className="deal-detail-value">{selectedRequest.serviceCharge}</div>
+                      </div>
+                    )}
+                    {selectedRequest.handoverDate && (
+                      <div className="deal-detail-item">
+                        <div className="deal-detail-label">Handover Date</div>
+                        <div className="deal-detail-value">{selectedRequest.handoverDate}</div>
+                      </div>
+                    )}
+                    {selectedRequest.developer && (
+                      <div className="deal-detail-item">
+                        <div className="deal-detail-label">Developer</div>
+                        <div className="deal-detail-value">{selectedRequest.developer}</div>
+                      </div>
+                    )}
+                    {selectedRequest.paymentPlan && (
+                      <div className="deal-detail-item">
+                        <div className="deal-detail-label">Payment Plan</div>
+                        <div className="deal-detail-value">{selectedRequest.paymentPlan}</div>
+                      </div>
+                    )}
                   </div>
                 </div>
-              )}
 
-              {selectedRequest.additionalNotes && (
-                <div className="detail-section" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #e0e0e0' }}>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#2c3e50', marginBottom: '16px' }}>Additional Notes</h3>
-                  <p style={{ whiteSpace: 'pre-wrap', padding: '12px', background: '#f8f9fa', borderRadius: '8px', color: '#2c3e50', lineHeight: '1.6' }}>{selectedRequest.additionalNotes}</p>
-                </div>
-              )}
+                {/* Features */}
+                {selectedRequest.features && selectedRequest.features.length > 0 && (
+                  <div className="detail-section">
+                    <h4 className="detail-section-title">Features</h4>
+                    <div className="features-list">
+                      {selectedRequest.features.map((feature, idx) => (
+                        <span key={idx} className="feature-badge">
+                          {feature}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-              {selectedRequest.filePaths && selectedRequest.filePaths.length > 0 && (
-                <div className="detail-section" style={{ marginBottom: '24px', paddingBottom: '20px', borderBottom: '1px solid #e0e0e0' }}>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#2c3e50', marginBottom: '16px' }}>Attached Files ({selectedRequest.filePaths.length})</h3>
-                  <ul style={{ listStyle: 'none', padding: 0 }}>
-                    {selectedRequest.filePaths.map((path, idx) => (
-                      <li key={idx} style={{ margin: '8px 0', padding: '8px 12px', background: '#f8f9fa', borderRadius: '6px' }}>
-                        <a 
-                          href={`${MAIN_BACKEND_URL}/api/analysis-requests/files/${encodeURIComponent(path)}`} 
-                          target="_blank" 
+                {/* Additional Notes */}
+                {selectedRequest.additionalNotes && (
+                  <div className="detail-section">
+                    <h4 className="detail-section-title">Additional Notes</h4>
+                    <div className="notes-content">
+                      {selectedRequest.additionalNotes}
+                    </div>
+                  </div>
+                )}
+
+                {/* Attached Files */}
+                {selectedRequest.filePaths && selectedRequest.filePaths.length > 0 && (
+                  <div className="detail-section">
+                    <h4 className="detail-section-title">Attached Files ({selectedRequest.filePaths.length})</h4>
+                    <div className="files-list">
+                      {selectedRequest.filePaths.map((path, idx) => (
+                        <a
+                          key={idx}
+                          href={`${MAIN_BACKEND_URL}/api/analysis-requests/files/${encodeURIComponent(path)}`}
+                          target="_blank"
                           rel="noopener noreferrer"
-                          style={{ color: '#e67e22', textDecoration: 'none', fontWeight: '500' }}
+                          className="file-link"
                         >
                           📎 {path.split('/').pop()}
                         </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-              <div className="detail-section" style={{ marginBottom: '24px' }}>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#2c3e50', marginBottom: '16px' }}>Timestamps</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Created:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleString() : 'N/A'}</span></p>
-                  <p style={{ margin: '8px 0' }}><strong style={{ color: '#555' }}>Updated:</strong> <span style={{ color: '#2c3e50' }}>{selectedRequest.updatedAt ? new Date(selectedRequest.updatedAt).toLocaleString() : 'N/A'}</span></p>
+                {/* Timestamps */}
+                <div className="detail-section">
+                  <h4 className="detail-section-title">Timestamps</h4>
+                  <div className="deal-detail-grid">
+                    <div className="deal-detail-item">
+                      <div className="deal-detail-label">Created</div>
+                      <div className="deal-detail-value">
+                        {selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleString() : 'N/A'}
+                      </div>
+                    </div>
+                    <div className="deal-detail-item">
+                      <div className="deal-detail-label">Updated</div>
+                      <div className="deal-detail-value">
+                        {selectedRequest.updatedAt ? new Date(selectedRequest.updatedAt).toLocaleString() : 'N/A'}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="modal-footer" style={{ padding: '20px 28px', borderTop: '1px solid #e0e0e0', display: 'flex', justifyContent: 'flex-end' }}>
-              <button onClick={() => setDetailModalOpen(false)} className="btn btn-primary">Close</button>
+              <div className="modal-footer">
+                <button className="btn-primary" onClick={() => setDetailModalOpen(false)}>
+                  Close
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </main>
     </div>
   );
 }
-
-const MAIN_BACKEND_URL = process.env.NEXT_PUBLIC_MAIN_BACKEND_URL || 'http://localhost:8080';
-

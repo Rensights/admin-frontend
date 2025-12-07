@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { adminApiClient, Deal, PaginatedResponse } from "@/lib/api";
+import { adminApiClient, Deal } from "@/lib/api";
 import AdminSidebar from "@/components/AdminSidebar";
 import "../dashboard.css";
 
@@ -22,6 +22,9 @@ export default function DealsPage() {
   const [cityFilter, setCityFilter] = useState<string>("");
   const [selectedDeals, setSelectedDeals] = useState<Set<string>>(new Set());
   const [editingDeal, setEditingDeal] = useState<Partial<Deal>>({});
+  const [approveConfirmOpen, setApproveConfirmOpen] = useState(false);
+  const [rejectConfirmOpen, setRejectConfirmOpen] = useState(false);
+  const [batchApproveConfirmOpen, setBatchApproveConfirmOpen] = useState(false);
 
   const loadDeals = useCallback(async () => {
     setLoading(true);
@@ -82,36 +85,42 @@ export default function DealsPage() {
       setSelectedDeal(null);
       setEditingDeal({});
     } catch (error: any) {
-      alert(error.message || "Failed to update deal");
+      setError(error.message || "Failed to update deal");
+      setTimeout(() => setError(null), 5000);
     }
   }, [selectedDeal, editingDeal, loadDeals]);
 
-  const handleApprove = useCallback(async (dealId: string) => {
+  const handleApprove = useCallback(async () => {
+    if (!selectedDeal) return;
     try {
-      await adminApiClient.approveDeal(dealId);
-      await loadDeals();
-      if (selectedDeal?.id === dealId) {
+      await adminApiClient.approveDeal(selectedDeal.id);
+      setApproveConfirmOpen(false);
+      setSelectedDeal(null);
+      if (detailModalOpen) {
         setDetailModalOpen(false);
-        setSelectedDeal(null);
       }
+      await loadDeals();
     } catch (error: any) {
-      alert(error.message || "Failed to approve deal");
+      setError(error.message || "Failed to approve deal");
+      setTimeout(() => setError(null), 5000);
     }
-  }, [loadDeals, selectedDeal]);
+  }, [selectedDeal, detailModalOpen, loadDeals]);
 
-  const handleReject = useCallback(async (dealId: string) => {
-    if (!confirm("Are you sure you want to reject this deal?")) return;
+  const handleReject = useCallback(async () => {
+    if (!selectedDeal) return;
     try {
-      await adminApiClient.rejectDeal(dealId);
-      await loadDeals();
-      if (selectedDeal?.id === dealId) {
+      await adminApiClient.rejectDeal(selectedDeal.id);
+      setRejectConfirmOpen(false);
+      setSelectedDeal(null);
+      if (detailModalOpen) {
         setDetailModalOpen(false);
-        setSelectedDeal(null);
       }
+      await loadDeals();
     } catch (error: any) {
-      alert(error.message || "Failed to reject deal");
+      setError(error.message || "Failed to reject deal");
+      setTimeout(() => setError(null), 5000);
     }
-  }, [loadDeals, selectedDeal]);
+  }, [selectedDeal, detailModalOpen, loadDeals]);
 
   const handleSelectDeal = useCallback((dealId: string) => {
     setSelectedDeals(prev => {
@@ -135,43 +144,51 @@ export default function DealsPage() {
 
   const handleBatchApprove = useCallback(async () => {
     if (selectedDeals.size === 0) {
-      alert("Please select at least one deal to approve");
+      setError("Please select at least one deal to approve");
+      setTimeout(() => setError(null), 5000);
       return;
     }
-    if (!confirm(`Are you sure you want to approve ${selectedDeals.size} deal(s)?`)) return;
     try {
       await adminApiClient.approveDeals(Array.from(selectedDeals));
+      setBatchApproveConfirmOpen(false);
       setSelectedDeals(new Set());
       await loadDeals();
     } catch (error: any) {
-      alert(error.message || "Failed to approve deals");
+      setError(error.message || "Failed to approve deals");
+      setTimeout(() => setError(null), 5000);
     }
   }, [selectedDeals, loadDeals]);
-
 
   if (loading && deals.length === 0) {
     return (
       <div className="dashboard-page">
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <p>Loading deals...</p>
-        </div>
+        <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
+        <main className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+          <div className="loading-container">
+            <div className="spinner"></div>
+            <p>Loading deals...</p>
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
     <div className="dashboard-page">
-      {/* Sidebar */}
       <AdminSidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      {/* Main Content */}
       <main className={`main-content ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
         <div className="page-header">
-          <h1>Today's Deals ({totalElements})</h1>
+          <div>
+            <h1>Today's Deals</h1>
+            <p>Pending deals awaiting approval ({totalElements} total)</p>
+          </div>
           <div className="header-actions">
             {selectedDeals.size > 0 && (
-              <button className="btn-primary" onClick={handleBatchApprove}>
+              <button 
+                className="btn-primary" 
+                onClick={() => setBatchApproveConfirmOpen(true)}
+              >
                 Approve Selected ({selectedDeals.size})
               </button>
             )}
@@ -183,171 +200,236 @@ export default function DealsPage() {
 
         {error && (
           <div className="error-message">
-            {error}
+            <span>⚠️</span>
+            <span>{error}</span>
+            <button onClick={() => setError(null)}>×</button>
           </div>
         )}
 
-        <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th style={{ width: '40px' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedDeals.size === deals.length && deals.length > 0}
-                    onChange={handleSelectAll}
-                  />
-                </th>
-                <th>Property Name</th>
-                <th>Location</th>
-                <th>City</th>
-                <th>Bedrooms</th>
-                <th>Size</th>
-                <th>Listed Price</th>
-                <th>Discount</th>
-                <th>Yield</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading && deals.length === 0 ? (
-                <tr>
-                  <td colSpan={11} style={{ textAlign: 'center', padding: '40px' }}>
-                    <div className="loading-container">
-                      <div className="spinner"></div>
-                      <p>Loading deals...</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : error ? (
-                <tr>
-                  <td colSpan={11} style={{ textAlign: 'center', padding: '40px', color: '#e74c3c' }}>
-                    {error}
-                  </td>
-                </tr>
-              ) : deals.length === 0 ? (
-                <tr>
-                  <td colSpan={11} className="empty-state">
-                    <div>No pending deals found for today</div>
-                    <p>Deals will appear here once they are imported from external sources</p>
-                  </td>
-                </tr>
-              ) : (
-                deals.map((deal) => (
-                  <tr key={deal.id}>
-                    <td>
+        {/* Filters */}
+        {cityFilter && (
+          <div className="filters-section">
+            <div className="filters-grid">
+              <div className="filter-group">
+                <label htmlFor="city-filter">City</label>
+                <select
+                  id="city-filter"
+                  className="filter-select"
+                  value={cityFilter}
+                  onChange={(e) => {
+                    setCityFilter(e.target.value);
+                    setCurrentPage(0);
+                  }}
+                >
+                  <option value="">All Cities</option>
+                  <option value="dubai">Dubai</option>
+                  <option value="abudhabi">Abu Dhabi</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Deals Table */}
+        <div className="table-section">
+          <div className="table-header">
+            <h3>Pending Deals</h3>
+            <div className="table-actions">
+              <span className="pagination-info">
+                Showing {deals.length > 0 ? currentPage * 20 + 1 : 0} - {Math.min((currentPage + 1) * 20, totalElements)} of {totalElements}
+              </span>
+            </div>
+          </div>
+          <div className="table-wrapper">
+            {loading && deals.length === 0 ? (
+              <div className="loading-container" style={{ padding: '60px' }}>
+                <div className="spinner"></div>
+                <p>Loading deals...</p>
+              </div>
+            ) : deals.length === 0 ? (
+              <div className="empty-state">
+                <div>No pending deals found for today</div>
+                <p>Deals will appear here once they are imported from external sources</p>
+              </div>
+            ) : (
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th className="checkbox-column">
                       <input
                         type="checkbox"
-                        checked={selectedDeals.has(deal.id)}
-                        onChange={() => handleSelectDeal(deal.id)}
+                        checked={selectedDeals.size === deals.length && deals.length > 0}
+                        onChange={handleSelectAll}
                       />
-                    </td>
-                    <td>{deal.name || 'N/A'}</td>
-                    <td>{deal.location || 'N/A'}</td>
-                    <td>{deal.city || 'N/A'}</td>
-                    <td>{deal.bedrooms || 'N/A'}</td>
-                    <td>{deal.size || 'N/A'}</td>
-                    <td>{deal.listedPrice || 'N/A'}</td>
-                    <td>{deal.discount || 'N/A'}</td>
-                    <td>{deal.rentalYield || 'N/A'}</td>
-                    <td>
-                      <span className="status-badge" style={{ backgroundColor: '#f39c12' }}>
-                        {deal.status}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="action-buttons">
-                        <button className="btn-small" onClick={() => handleViewDetails(deal)}>
-                          View
-                        </button>
-                        <button className="btn-small" onClick={() => handleEdit(deal)}>
-                          Edit
-                        </button>
-                        <button className="btn-small btn-success" onClick={() => handleApprove(deal.id)}>
-                          Approve
-                        </button>
-                        <button className="btn-small btn-danger" onClick={() => handleReject(deal.id)}>
-                          Reject
-                        </button>
-                      </div>
-                    </td>
+                    </th>
+                    <th>Property Name</th>
+                    <th>Location</th>
+                    <th>City</th>
+                    <th>Bedrooms</th>
+                    <th>Size</th>
+                    <th>Listed Price</th>
+                    <th>Discount</th>
+                    <th>Yield</th>
+                    <th>Status</th>
+                    <th>Actions</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {deals.map((deal) => (
+                    <tr key={deal.id}>
+                      <td className="checkbox-column">
+                        <input
+                          type="checkbox"
+                          checked={selectedDeals.has(deal.id)}
+                          onChange={() => handleSelectDeal(deal.id)}
+                        />
+                      </td>
+                      <td>
+                        <div className="deal-property-name">{deal.name || 'N/A'}</div>
+                      </td>
+                      <td>{deal.location || 'N/A'}</td>
+                      <td>{deal.city || 'N/A'}</td>
+                      <td>{deal.bedrooms || 'N/A'}</td>
+                      <td>{deal.size || 'N/A'}</td>
+                      <td>{deal.listedPrice || 'N/A'}</td>
+                      <td>
+                        <span className="status-badge discount">{deal.discount || 'N/A'}</span>
+                      </td>
+                      <td>{deal.rentalYield || 'N/A'}</td>
+                      <td>
+                        <span className="status-badge" style={{ background: '#f39c12', color: 'white' }}>
+                          {deal.status}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="action-buttons">
+                          <button className="btn-small view-btn" onClick={() => handleViewDetails(deal)}>
+                            View
+                          </button>
+                          <button className="btn-small edit-btn" onClick={() => handleEdit(deal)}>
+                            Edit
+                          </button>
+                          <button className="btn-small activate-btn" onClick={() => {
+                            setSelectedDeal(deal);
+                            setApproveConfirmOpen(true);
+                          }}>
+                            Approve
+                          </button>
+                          <button className="btn-small delete-btn" onClick={() => {
+                            setSelectedDeal(deal);
+                            setRejectConfirmOpen(true);
+                          }}>
+                            Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
 
         {/* Pagination */}
-        <div className="pagination">
-          <button
-            disabled={currentPage === 0}
-            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
-          >
-            Previous
-          </button>
-          <span>
-            Page {currentPage + 1} of {totalPages}
-          </span>
-          <button
-            disabled={currentPage >= totalPages - 1}
-            onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
-          >
-            Next
-          </button>
-        </div>
+        {totalPages > 1 && (
+          <div className="pagination">
+            <button
+              className="pagination-btn"
+              disabled={currentPage === 0}
+              onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
+            >
+              Previous
+            </button>
+            <span className="pagination-info">
+              Page {currentPage + 1} of {totalPages} ({totalElements} total)
+            </span>
+            <button
+              className="pagination-btn"
+              disabled={currentPage >= totalPages - 1}
+              onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
+            >
+              Next
+            </button>
+          </div>
+        )}
 
         {/* Detail Modal */}
         {detailModalOpen && selectedDeal && (
           <div className="modal-overlay" onClick={() => setDetailModalOpen(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px' }}>
               <div className="modal-header">
-                <h2>Deal Details</h2>
+                <h3>Deal Details</h3>
                 <button className="modal-close" onClick={() => setDetailModalOpen(false)}>×</button>
               </div>
               <div className="modal-body">
-                <div className="detail-row">
-                  <strong>Property Name:</strong> {selectedDeal.name || 'N/A'}
-                </div>
-                <div className="detail-row">
-                  <strong>Location:</strong> {selectedDeal.location || 'N/A'}
-                </div>
-                <div className="detail-row">
-                  <strong>City:</strong> {selectedDeal.city || 'N/A'}
-                </div>
-                <div className="detail-row">
-                  <strong>Area:</strong> {selectedDeal.area || 'N/A'}
-                </div>
-                <div className="detail-row">
-                  <strong>Bedrooms:</strong> {selectedDeal.bedrooms || 'N/A'}
-                </div>
-                <div className="detail-row">
-                  <strong>Size:</strong> {selectedDeal.size || 'N/A'}
-                </div>
-                <div className="detail-row">
-                  <strong>Listed Price:</strong> {selectedDeal.listedPrice || 'N/A'}
-                </div>
-                <div className="detail-row">
-                  <strong>Price Value:</strong> {selectedDeal.priceValue ? `AED ${selectedDeal.priceValue.toLocaleString()}` : 'N/A'}
-                </div>
-                <div className="detail-row">
-                  <strong>Estimate Range:</strong> {selectedDeal.estimateRange || 'N/A'}
-                </div>
-                <div className="detail-row">
-                  <strong>Discount:</strong> {selectedDeal.discount || 'N/A'}
-                </div>
-                <div className="detail-row">
-                  <strong>Rental Yield:</strong> {selectedDeal.rentalYield || 'N/A'}
-                </div>
-                <div className="detail-row">
-                  <strong>Building Status:</strong> {selectedDeal.buildingStatus || 'N/A'}
-                </div>
-                <div className="detail-row">
-                  <strong>Status:</strong> {selectedDeal.status || 'N/A'}
-                </div>
-                <div className="detail-row">
-                  <strong>Created At:</strong> {selectedDeal.createdAt ? new Date(selectedDeal.createdAt).toLocaleString() : 'N/A'}
+                <div className="deal-detail-grid">
+                  <div className="deal-detail-item">
+                    <div className="deal-detail-label">Property Name</div>
+                    <div className="deal-detail-value">{selectedDeal.name || 'N/A'}</div>
+                  </div>
+                  <div className="deal-detail-item">
+                    <div className="deal-detail-label">Location</div>
+                    <div className="deal-detail-value">{selectedDeal.location || 'N/A'}</div>
+                  </div>
+                  <div className="deal-detail-item">
+                    <div className="deal-detail-label">City</div>
+                    <div className="deal-detail-value">{selectedDeal.city || 'N/A'}</div>
+                  </div>
+                  <div className="deal-detail-item">
+                    <div className="deal-detail-label">Area</div>
+                    <div className="deal-detail-value">{selectedDeal.area || 'N/A'}</div>
+                  </div>
+                  <div className="deal-detail-item">
+                    <div className="deal-detail-label">Bedrooms</div>
+                    <div className="deal-detail-value">{selectedDeal.bedrooms || 'N/A'}</div>
+                  </div>
+                  <div className="deal-detail-item">
+                    <div className="deal-detail-label">Size</div>
+                    <div className="deal-detail-value">{selectedDeal.size || 'N/A'}</div>
+                  </div>
+                  <div className="deal-detail-item">
+                    <div className="deal-detail-label">Listed Price</div>
+                    <div className="deal-detail-value">{selectedDeal.listedPrice || 'N/A'}</div>
+                  </div>
+                  <div className="deal-detail-item">
+                    <div className="deal-detail-label">Price Value</div>
+                    <div className="deal-detail-value">
+                      {selectedDeal.priceValue ? `AED ${selectedDeal.priceValue.toLocaleString()}` : 'N/A'}
+                    </div>
+                  </div>
+                  <div className="deal-detail-item">
+                    <div className="deal-detail-label">Estimate Range</div>
+                    <div className="deal-detail-value">{selectedDeal.estimateRange || 'N/A'}</div>
+                  </div>
+                  <div className="deal-detail-item">
+                    <div className="deal-detail-label">Discount</div>
+                    <div className="deal-detail-value">{selectedDeal.discount || 'N/A'}</div>
+                  </div>
+                  <div className="deal-detail-item">
+                    <div className="deal-detail-label">Rental Yield</div>
+                    <div className="deal-detail-value">{selectedDeal.rentalYield || 'N/A'}</div>
+                  </div>
+                  <div className="deal-detail-item">
+                    <div className="deal-detail-label">Building Status</div>
+                    <div className="deal-detail-value">{selectedDeal.buildingStatus || 'N/A'}</div>
+                  </div>
+                  <div className="deal-detail-item">
+                    <div className="deal-detail-label">Status</div>
+                    <div className="deal-detail-value">
+                      <span className="status-badge" style={{ background: '#f39c12', color: 'white' }}>
+                        {selectedDeal.status || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                  {selectedDeal.createdAt && (
+                    <div className="deal-detail-item">
+                      <div className="deal-detail-label">Created At</div>
+                      <div className="deal-detail-value">
+                        {new Date(selectedDeal.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="modal-footer">
@@ -360,10 +442,10 @@ export default function DealsPage() {
                 }}>
                   Edit
                 </button>
-                <button className="btn-success" onClick={() => handleApprove(selectedDeal.id)}>
+                <button className="btn-success" onClick={() => setApproveConfirmOpen(true)}>
                   Approve
                 </button>
-                <button className="btn-danger" onClick={() => handleReject(selectedDeal.id)}>
+                <button className="btn-danger" onClick={() => setRejectConfirmOpen(true)}>
                   Reject
                 </button>
               </div>
@@ -374,109 +456,208 @@ export default function DealsPage() {
         {/* Edit Modal */}
         {editModalOpen && selectedDeal && (
           <div className="modal-overlay" onClick={() => setEditModalOpen(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '700px' }}>
               <div className="modal-header">
-                <h2>Edit Deal</h2>
+                <h3>Edit Deal</h3>
                 <button className="modal-close" onClick={() => setEditModalOpen(false)}>×</button>
               </div>
               <div className="modal-body">
-                <div className="form-group">
-                  <label>Property Name:</label>
-                  <input
-                    type="text"
-                    value={editingDeal.name || ''}
-                    onChange={(e) => setEditingDeal({ ...editingDeal, name: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Location:</label>
-                  <input
-                    type="text"
-                    value={editingDeal.location || ''}
-                    onChange={(e) => setEditingDeal({ ...editingDeal, location: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>City:</label>
-                  <input
-                    type="text"
-                    value={editingDeal.city || ''}
-                    onChange={(e) => setEditingDeal({ ...editingDeal, city: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Area:</label>
-                  <input
-                    type="text"
-                    value={editingDeal.area || ''}
-                    onChange={(e) => setEditingDeal({ ...editingDeal, area: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Bedrooms:</label>
-                  <input
-                    type="text"
-                    value={editingDeal.bedrooms || ''}
-                    onChange={(e) => setEditingDeal({ ...editingDeal, bedrooms: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Size:</label>
-                  <input
-                    type="text"
-                    value={editingDeal.size || ''}
-                    onChange={(e) => setEditingDeal({ ...editingDeal, size: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Listed Price:</label>
-                  <input
-                    type="text"
-                    value={editingDeal.listedPrice || ''}
-                    onChange={(e) => setEditingDeal({ ...editingDeal, listedPrice: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Estimate Range:</label>
-                  <input
-                    type="text"
-                    value={editingDeal.estimateRange || ''}
-                    onChange={(e) => setEditingDeal({ ...editingDeal, estimateRange: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Discount:</label>
-                  <input
-                    type="text"
-                    value={editingDeal.discount || ''}
-                    onChange={(e) => setEditingDeal({ ...editingDeal, discount: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Rental Yield:</label>
-                  <input
-                    type="text"
-                    value={editingDeal.rentalYield || ''}
-                    onChange={(e) => setEditingDeal({ ...editingDeal, rentalYield: e.target.value })}
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Building Status:</label>
-                  <select
-                    value={editingDeal.buildingStatus || 'READY'}
-                    onChange={(e) => setEditingDeal({ ...editingDeal, buildingStatus: e.target.value as 'READY' | 'OFF_PLAN' })}
-                  >
-                    <option value="READY">Ready</option>
-                    <option value="OFF_PLAN">Off-Plan</option>
-                  </select>
-                </div>
+                <form className="deal-edit-form" onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSaveEdit();
+                }}>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Property Name</label>
+                      <input
+                        type="text"
+                        value={editingDeal.name || ''}
+                        onChange={(e) => setEditingDeal({ ...editingDeal, name: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Location</label>
+                      <input
+                        type="text"
+                        value={editingDeal.location || ''}
+                        onChange={(e) => setEditingDeal({ ...editingDeal, location: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>City</label>
+                      <input
+                        type="text"
+                        value={editingDeal.city || ''}
+                        onChange={(e) => setEditingDeal({ ...editingDeal, city: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Area</label>
+                      <input
+                        type="text"
+                        value={editingDeal.area || ''}
+                        onChange={(e) => setEditingDeal({ ...editingDeal, area: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Bedrooms</label>
+                      <input
+                        type="text"
+                        value={editingDeal.bedrooms || ''}
+                        onChange={(e) => setEditingDeal({ ...editingDeal, bedrooms: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Size</label>
+                      <input
+                        type="text"
+                        value={editingDeal.size || ''}
+                        onChange={(e) => setEditingDeal({ ...editingDeal, size: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Listed Price</label>
+                      <input
+                        type="text"
+                        value={editingDeal.listedPrice || ''}
+                        onChange={(e) => setEditingDeal({ ...editingDeal, listedPrice: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Building Status</label>
+                      <select
+                        value={editingDeal.buildingStatus || 'READY'}
+                        onChange={(e) => setEditingDeal({ ...editingDeal, buildingStatus: e.target.value as 'READY' | 'OFF_PLAN' })}
+                      >
+                        <option value="READY">Ready</option>
+                        <option value="OFF_PLAN">Off-Plan</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>Discount</label>
+                      <input
+                        type="text"
+                        value={editingDeal.discount || ''}
+                        onChange={(e) => setEditingDeal({ ...editingDeal, discount: e.target.value })}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Rental Yield</label>
+                      <input
+                        type="text"
+                        value={editingDeal.rentalYield || ''}
+                        onChange={(e) => setEditingDeal({ ...editingDeal, rentalYield: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>Estimate Range</label>
+                    <input
+                      type="text"
+                      value={editingDeal.estimateRange || ''}
+                      onChange={(e) => setEditingDeal({ ...editingDeal, estimateRange: e.target.value })}
+                    />
+                  </div>
+                  <div className="form-actions">
+                    <button type="button" className="btn-secondary" onClick={() => setEditModalOpen(false)}>
+                      Cancel
+                    </button>
+                    <button type="submit" className="btn-primary">
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Approve Confirmation Modal */}
+        {approveConfirmOpen && selectedDeal && (
+          <div className="modal-overlay" onClick={() => setApproveConfirmOpen(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+              <div className="modal-header">
+                <h3>Confirm Approval</h3>
+                <button className="modal-close" onClick={() => setApproveConfirmOpen(false)}>×</button>
+              </div>
+              <div className="modal-body">
+                <p style={{ marginBottom: '20px', lineHeight: '1.6' }}>
+                  Are you sure you want to approve <strong>{selectedDeal.name || 'this deal'}</strong>?
+                </p>
+                <p style={{ color: '#27ae60', fontWeight: '600', fontSize: '0.9rem' }}>
+                  This deal will become available to users.
+                </p>
               </div>
               <div className="modal-footer">
-                <button className="btn-secondary" onClick={() => setEditModalOpen(false)}>
+                <button className="btn-secondary" onClick={() => setApproveConfirmOpen(false)}>
                   Cancel
                 </button>
-                <button className="btn-primary" onClick={handleSaveEdit}>
-                  Save Changes
+                <button className="btn-success" onClick={handleApprove}>
+                  Approve Deal
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Reject Confirmation Modal */}
+        {rejectConfirmOpen && selectedDeal && (
+          <div className="modal-overlay" onClick={() => setRejectConfirmOpen(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+              <div className="modal-header">
+                <h3>Confirm Rejection</h3>
+                <button className="modal-close" onClick={() => setRejectConfirmOpen(false)}>×</button>
+              </div>
+              <div className="modal-body">
+                <p style={{ marginBottom: '20px', lineHeight: '1.6' }}>
+                  Are you sure you want to reject <strong>{selectedDeal.name || 'this deal'}</strong>?
+                </p>
+                <p style={{ color: '#e74c3c', fontWeight: '600', fontSize: '0.9rem' }}>
+                  This action cannot be undone.
+                </p>
+              </div>
+              <div className="modal-footer">
+                <button className="btn-secondary" onClick={() => setRejectConfirmOpen(false)}>
+                  Cancel
+                </button>
+                <button className="btn-danger" onClick={handleReject}>
+                  Reject Deal
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Batch Approve Confirmation Modal */}
+        {batchApproveConfirmOpen && selectedDeals.size > 0 && (
+          <div className="modal-overlay" onClick={() => setBatchApproveConfirmOpen(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+              <div className="modal-header">
+                <h3>Confirm Batch Approval</h3>
+                <button className="modal-close" onClick={() => setBatchApproveConfirmOpen(false)}>×</button>
+              </div>
+              <div className="modal-body">
+                <p style={{ marginBottom: '20px', lineHeight: '1.6' }}>
+                  Are you sure you want to approve <strong>{selectedDeals.size} deal(s)</strong>?
+                </p>
+                <p style={{ color: '#27ae60', fontWeight: '600', fontSize: '0.9rem' }}>
+                  All selected deals will become available to users.
+                </p>
+              </div>
+              <div className="modal-footer">
+                <button className="btn-secondary" onClick={() => setBatchApproveConfirmOpen(false)}>
+                  Cancel
+                </button>
+                <button className="btn-success" onClick={handleBatchApprove}>
+                  Approve All
                 </button>
               </div>
             </div>
@@ -486,4 +667,3 @@ export default function DealsPage() {
     </div>
   );
 }
-
