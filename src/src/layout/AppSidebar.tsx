@@ -101,7 +101,7 @@ const AppSidebar: React.FC = () => {
             nav.path && (
               <Link
                 href={nav.path}
-                className={`menu-item group ${
+                className={`menu-item group relative ${
                   isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
                 }`}
               >
@@ -114,6 +114,11 @@ const AppSidebar: React.FC = () => {
                 >
                   {nav.icon}
                 </span>
+                {nav.path === "/analysis-requests" && pendingAnalysisCount > 0 && !(isExpanded || isHovered || isMobileOpen) && (
+                  <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-semibold text-white bg-error-500 rounded-full">
+                    {pendingAnalysisCount > 99 ? "99+" : pendingAnalysisCount > 9 ? "9+" : pendingAnalysisCount}
+                  </span>
+                )}
                 {(isExpanded || isHovered || isMobileOpen) && (
                   <>
                     <span className={`menu-item-text`}>{nav.name}</span>
