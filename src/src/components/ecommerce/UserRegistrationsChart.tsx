@@ -23,8 +23,8 @@ export default function UserRegistrationsChart({
   const [isOpen, setIsOpen] = useState(false);
 
   // Separate monthly and daily data to avoid TypeScript union type issues
-  const monthlyData = monthlyUserRegistrations;
-  const dailyData = dailyUserRegistrations;
+  const monthlyData = monthlyUserRegistrations || [];
+  const dailyData = dailyUserRegistrations || [];
 
   const categories = viewMode === "monthly"
     ? (monthlyData.length > 0
@@ -38,16 +38,16 @@ export default function UserRegistrationsChart({
         : []);
 
   const freeData = viewMode === "monthly"
-    ? monthlyData.map(item => item.free)
-    : dailyData.map(item => item.free);
+    ? (monthlyData.length > 0 ? monthlyData.map(item => item.free) : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    : (dailyData.length > 0 ? dailyData.map(item => item.free) : []);
   
   const premiumData = viewMode === "monthly"
-    ? monthlyData.map(item => item.premium)
-    : dailyData.map(item => item.premium);
+    ? (monthlyData.length > 0 ? monthlyData.map(item => item.premium) : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    : (dailyData.length > 0 ? dailyData.map(item => item.premium) : []);
   
   const enterpriseData = viewMode === "monthly"
-    ? monthlyData.map(item => item.enterprise)
-    : dailyData.map(item => item.enterprise);
+    ? (monthlyData.length > 0 ? monthlyData.map(item => item.enterprise) : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+    : (dailyData.length > 0 ? dailyData.map(item => item.enterprise) : []);
 
   const options: ApexOptions = {
     colors: ["#9CB9FF", "#465FFF", "#7C3AED"],

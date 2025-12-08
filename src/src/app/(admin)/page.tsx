@@ -55,43 +55,37 @@ export default function Dashboard() {
     <div className="grid grid-cols-12 gap-4 md:gap-6">
       {/* Income Chart and Total Income Card */}
       <div className="col-span-12 space-y-6 xl:col-span-7">
-        {stats && (
-          <IncomeChart
-            monthlyIncome={stats.monthlyIncome}
-            dailyIncome={stats.dailyIncome}
-            totalRevenue={stats.totalRevenue}
-          />
-        )}
+        <IncomeChart
+          monthlyIncome={stats?.monthlyIncome}
+          dailyIncome={stats?.dailyIncome}
+          totalRevenue={stats?.totalRevenue || 0}
+        />
       </div>
 
       <div className="col-span-12 xl:col-span-5">
-        {stats && <TotalIncomeCard totalRevenue={stats.totalRevenue} />}
+        <TotalIncomeCard totalRevenue={stats?.totalRevenue || 0} />
       </div>
 
       {/* Device Type Chart */}
       <div className="col-span-12">
-        {stats && <DeviceTypeChart deviceTypeStats={stats.deviceTypeStats} />}
+        <DeviceTypeChart deviceTypeStats={stats?.deviceTypeStats} />
       </div>
 
       {/* User Registrations Chart */}
       <div className="col-span-12">
-        {stats && (
-          <UserRegistrationsChart
-            monthlyUserRegistrations={stats.monthlyUserRegistrations}
-            dailyUserRegistrations={stats.dailyUserRegistrations}
-          />
-        )}
+        <UserRegistrationsChart
+          monthlyUserRegistrations={stats?.monthlyUserRegistrations}
+          dailyUserRegistrations={stats?.dailyUserRegistrations}
+        />
       </div>
 
       {/* User Type Totals and Demographic */}
       <div className="col-span-12 xl:col-span-5">
-        {stats && (
-          <UserTypeTotalsCard
-            freeUsers={stats.freeUsers}
-            premiumUsers={stats.premiumUsers}
-            enterpriseUsers={stats.enterpriseUsers}
-          />
-        )}
+        <UserTypeTotalsCard
+          freeUsers={stats?.freeUsers || 0}
+          premiumUsers={stats?.premiumUsers || 0}
+          enterpriseUsers={stats?.enterpriseUsers || 0}
+        />
       </div>
 
       <div className="col-span-12 xl:col-span-7">
