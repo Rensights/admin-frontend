@@ -240,11 +240,6 @@ export interface DashboardStats {
   deviceTypeStats?: { type: string; count: number }[];
   monthlyUserRegistrations?: { month: string; free: number; premium: number; enterprise: number }[];
   dailyUserRegistrations?: { date: string; free: number; premium: number; enterprise: number }[];
-  monthlyIncome?: { month: string; income: number }[];
-  dailyIncome?: { date: string; income: number }[];
-  deviceTypeStats?: { type: string; count: number }[];
-  monthlyUserRegistrations?: { month: string; free: number; premium: number; enterprise: number }[];
-  dailyUserRegistrations?: { date: string; free: number; premium: number; enterprise: number }[];
 }
 
 export interface AnalysisRequest {
