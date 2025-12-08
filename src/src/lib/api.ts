@@ -195,6 +195,19 @@ class AdminApiClient {
       method: 'POST',
     });
   }
+
+  // Test data endpoints
+  async seedTestDeals(): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/api/admin/test/seed-deals', {
+      method: 'POST',
+    });
+  }
+
+  async deleteAllDeals(): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/api/admin/test/delete-all-deals', {
+      method: 'DELETE',
+    });
+  }
 }
 
 export interface AdminAuthResponse {

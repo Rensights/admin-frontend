@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { adminApiClient, Deal } from "@/lib/api";
+import Button from "@/components/ui/button/Button";
 
 export default function DealsPage() {
   const router = useRouter();
@@ -11,6 +12,9 @@ export default function DealsPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [seeding, setSeeding] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
   const loadDeals = useCallback(async () => {
     setLoading(true);
@@ -49,10 +53,40 @@ export default function DealsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Today's Deals</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Pending deals awaiting approval</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Today's Deals</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Pending deals awaiting approval</p>
+        </div>
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            onClick={handleSeedTestDeals}
+            disabled={seeding}
+            className="whitespace-nowrap"
+          >
+            {seeding ? "Adding..." : "Add Test Deals"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleDeleteAllDeals}
+            disabled={deleting}
+            className="whitespace-nowrap border-red-300 text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400"
+          >
+            {deleting ? "Deleting..." : "Delete All Deals"}
+          </Button>
+        </div>
       </div>
+
+      {actionMessage && (
+        <div className={`p-4 mb-4 text-sm rounded-lg ${
+          actionMessage.includes("success") 
+            ? "text-green-600 bg-green-50 dark:bg-green-500/10 dark:text-green-400"
+            : "text-red-600 bg-red-50 dark:bg-red-500/10 dark:text-red-400"
+        }`}>
+          {actionMessage}
+        </div>
+      )}
 
       {error && (
         <div className="p-4 mb-4 text-sm text-red-600 bg-red-50 rounded-lg dark:bg-red-500/10 dark:text-red-400">
