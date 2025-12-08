@@ -185,3 +185,4 @@ export default function IncomeChart({ monthlyIncome = [], dailyIncome = [], tota
   );
 }
 
+
