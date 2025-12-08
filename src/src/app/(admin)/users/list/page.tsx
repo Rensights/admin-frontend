@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { adminApiClient, User } from "@/lib/api";
-import { Modal } from "@/components/ui/modal";
+import Link from "next/link";
 
 export default function UsersListPage() {
   const router = useRouter();
@@ -13,8 +13,6 @@ export default function UsersListPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [viewModalOpen, setViewModalOpen] = useState(false);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
@@ -130,15 +128,12 @@ export default function UsersListPage() {
                       {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button 
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setViewModalOpen(true);
-                        }}
+                      <Link 
+                        href={`/users/list/${user.id}`}
                         className="text-brand-600 hover:text-brand-900 dark:text-brand-400"
                       >
                         View
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 ))
@@ -147,89 +142,6 @@ export default function UsersListPage() {
           </table>
         </div>
       </div>
-
-      {/* View User Modal */}
-      <Modal isOpen={viewModalOpen} onClose={() => setViewModalOpen(false)}>
-        {selectedUser && (
-          <div className="p-6 max-w-2xl">
-            <h2 className="mb-6 text-xl font-bold text-gray-800 dark:text-white/90">User Details</h2>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Email</label>
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{selectedUser.email}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Status</label>
-                  <p className="mt-1">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      selectedUser.isActive 
-                        ? 'bg-success-50 text-success-600 dark:bg-success-500/15' 
-                        : 'bg-gray-100 text-gray-600 dark:bg-gray-800'
-                    }`}>
-                      {selectedUser.isActive ? 'Active' : 'Inactive'}
-                    </span>
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">First Name</label>
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{selectedUser.firstName || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Last Name</label>
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{selectedUser.lastName || 'N/A'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">User Tier</label>
-                  <p className="mt-1">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      selectedUser.userTier === 'ENTERPRISE' ? 'bg-purple-100 text-purple-800 dark:bg-purple-500/15 dark:text-purple-400' :
-                      selectedUser.userTier === 'PREMIUM' ? 'bg-brand-100 text-brand-800 dark:bg-brand-500/15 dark:text-brand-400' :
-                      'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400'
-                    }`}>
-                      {selectedUser.userTier}
-                    </span>
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Email Verified</label>
-                  <p className="mt-1">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      selectedUser.emailVerified 
-                        ? 'bg-success-50 text-success-600 dark:bg-success-500/15' 
-                        : 'bg-gray-100 text-gray-600 dark:bg-gray-800'
-                    }`}>
-                      {selectedUser.emailVerified ? 'Verified' : 'Not Verified'}
-                    </span>
-                  </p>
-                </div>
-                {selectedUser.customerId && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Customer ID</label>
-                    <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{selectedUser.customerId}</p>
-                  </div>
-                )}
-                {selectedUser.createdAt && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Created At</label>
-                    <p className="mt-1 text-sm text-gray-900 dark:text-white/90">
-                      {new Date(selectedUser.createdAt).toLocaleString()}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={() => setViewModalOpen(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
     </div>
   );
 }
