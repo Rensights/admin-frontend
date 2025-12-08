@@ -40,6 +40,54 @@ export default function DealsPage() {
     loadDeals();
   }, [router, currentPage, loadDeals]);
 
+  const handleSeedTestDeals = async () => {
+    if (!confirm("Are you sure you want to add test deals to the database? This will add 13 test deals.")) {
+      return;
+    }
+    
+    setSeeding(true);
+    setActionMessage(null);
+    try {
+      await adminApiClient.seedTestDeals();
+      setActionMessage("Test deals added successfully!");
+      setTimeout(() => {
+        setActionMessage(null);
+        loadDeals();
+      }, 2000);
+    } catch (error: any) {
+      console.error("Error seeding test deals:", error);
+      setActionMessage(error.message || "Failed to add test deals");
+    } finally {
+      setSeeding(false);
+    }
+  };
+
+  const handleDeleteAllDeals = async () => {
+    if (!confirm("WARNING: This will delete ALL deals from the database! This action cannot be undone. Are you absolutely sure?")) {
+      return;
+    }
+    
+    if (!confirm("Please confirm one more time: Delete ALL deals?")) {
+      return;
+    }
+    
+    setDeleting(true);
+    setActionMessage(null);
+    try {
+      await adminApiClient.deleteAllDeals();
+      setActionMessage("All deals deleted successfully!");
+      setTimeout(() => {
+        setActionMessage(null);
+        loadDeals();
+      }, 2000);
+    } catch (error: any) {
+      console.error("Error deleting all deals:", error);
+      setActionMessage(error.message || "Failed to delete deals");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
