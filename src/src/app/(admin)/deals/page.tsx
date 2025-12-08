@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { adminApiClient, Deal } from "@/lib/api";
 import Button from "@/components/ui/button/Button";
 
@@ -15,6 +16,9 @@ export default function DealsPage() {
   const [seeding, setSeeding] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [selectedDeals, setSelectedDeals] = useState<Set<string>>(new Set());
+  const [approving, setApproving] = useState(false);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
 
   const loadDeals = useCallback(async () => {
     setLoading(true);
@@ -88,6 +92,73 @@ export default function DealsPage() {
     }
   };
 
+  const handleSelectDeal = (dealId: string) => {
+    const newSelected = new Set(selectedDeals);
+    if (newSelected.has(dealId)) {
+      newSelected.delete(dealId);
+    } else {
+      newSelected.add(dealId);
+    }
+    setSelectedDeals(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedDeals.size === deals.length) {
+      setSelectedDeals(new Set());
+    } else {
+      setSelectedDeals(new Set(deals.map(d => d.id)));
+    }
+  };
+
+  const handleApproveDeal = async (dealId: string) => {
+    if (!confirm("Are you sure you want to approve this deal?")) return;
+
+    setApprovingId(dealId);
+    setError(null);
+    try {
+      await adminApiClient.approveDeal(dealId);
+      setActionMessage("Deal approved successfully!");
+      setTimeout(() => {
+        setActionMessage(null);
+        loadDeals();
+        setSelectedDeals(new Set());
+      }, 1000);
+    } catch (error: any) {
+      console.error("Error approving deal:", error);
+      setError(error.message || "Failed to approve deal");
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedDeals.size === 0) {
+      alert("Please select at least one deal to approve");
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to approve ${selectedDeals.size} deal(s)?`)) {
+      return;
+    }
+
+    setApproving(true);
+    setError(null);
+    try {
+      await adminApiClient.approveDeals(Array.from(selectedDeals));
+      setActionMessage(`${selectedDeals.size} deal(s) approved successfully!`);
+      setTimeout(() => {
+        setActionMessage(null);
+        loadDeals();
+        setSelectedDeals(new Set());
+      }, 1000);
+    } catch (error: any) {
+      console.error("Error bulk approving deals:", error);
+      setError(error.message || "Failed to approve deals");
+    } finally {
+      setApproving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -107,6 +178,15 @@ export default function DealsPage() {
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Pending deals awaiting approval</p>
         </div>
         <div className="flex gap-3">
+          {selectedDeals.size > 0 && (
+            <Button
+              onClick={handleBulkApprove}
+              disabled={approving}
+              className="whitespace-nowrap"
+            >
+              {approving ? "Approving..." : `Approve Selected (${selectedDeals.size})`}
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={handleSeedTestDeals}
@@ -147,6 +227,14 @@ export default function DealsPage() {
           <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
+                <th className="px-6 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={deals.length > 0 && selectedDeals.size === deals.length}
+                    onChange={handleSelectAll}
+                    className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                  />
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Location</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-400">Price</th>
@@ -154,16 +242,43 @@ export default function DealsPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-800">
-              {deals.map((deal) => (
-                <tr key={deal.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white/90">{deal.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{deal.location}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{deal.listedPrice}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button className="text-brand-600 hover:text-brand-900 dark:text-brand-400">View</button>
+              {deals.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                    No pending deals for today
                   </td>
                 </tr>
-              ))}
+              ) : (
+                deals.map((deal) => (
+                  <tr key={deal.id} className={selectedDeals.has(deal.id) ? "bg-brand-50 dark:bg-brand-500/10" : ""}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedDeals.has(deal.id)}
+                        onChange={() => handleSelectDeal(deal.id)}
+                        className="rounded border-gray-300 text-brand-600 focus:ring-brand-500"
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white/90">{deal.name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{deal.location}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{deal.listedPrice}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <div className="flex gap-3">
+                        <Link href={`/deals/${deal.id}`} className="text-brand-600 hover:text-brand-900 dark:text-brand-400">
+                          View
+                        </Link>
+                        <button
+                          onClick={() => handleApproveDeal(deal.id)}
+                          disabled={approvingId === deal.id}
+                          className="text-success-600 hover:text-success-900 dark:text-success-400 disabled:opacity-50"
+                        >
+                          {approvingId === deal.id ? "Approving..." : "Approve"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
