@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { adminApiClient, AnalysisRequest } from "@/lib/api";
+import { Modal } from "@/components/ui/modal";
 
 export default function AnalysisRequestsPage() {
   const router = useRouter();
@@ -11,6 +12,8 @@ export default function AnalysisRequestsPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<AnalysisRequest | null>(null);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
 
   const loadRequests = useCallback(async () => {
     setLoading(true);
@@ -88,7 +91,15 @@ export default function AnalysisRequestsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button className="text-brand-600 hover:text-brand-900 dark:text-brand-400">View</button>
+                    <button 
+                      onClick={() => {
+                        setSelectedRequest(request);
+                        setViewModalOpen(true);
+                      }}
+                      className="text-brand-600 hover:text-brand-900 dark:text-brand-400"
+                    >
+                      View
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -96,6 +107,119 @@ export default function AnalysisRequestsPage() {
           </table>
         </div>
       </div>
+
+      {/* View Analysis Request Modal */}
+      <Modal isOpen={viewModalOpen} onClose={() => setViewModalOpen(false)}>
+        {selectedRequest && (
+          <div className="p-6 max-w-4xl max-h-[90vh] overflow-y-auto">
+            <h2 className="mb-6 text-xl font-bold text-gray-800 dark:text-white/90">Analysis Request Details</h2>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Email</label>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{selectedRequest.email}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Status</label>
+                  <p className="mt-1">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      selectedRequest.status === 'COMPLETED' ? 'bg-success-50 text-success-600 dark:bg-success-500/15' :
+                      selectedRequest.status === 'IN_PROGRESS' ? 'bg-warning-50 text-warning-600 dark:bg-warning-500/15' :
+                      'bg-gray-100 text-gray-600 dark:bg-gray-800'
+                    }`}>
+                      {selectedRequest.status}
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">City</label>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{selectedRequest.city}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Area</label>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{selectedRequest.area}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Building Name</label>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{selectedRequest.buildingName}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Property Type</label>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{selectedRequest.propertyType}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Bedrooms</label>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{selectedRequest.bedrooms}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Asking Price</label>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{selectedRequest.askingPrice}</p>
+                </div>
+                {selectedRequest.size && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Size</label>
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{selectedRequest.size}</p>
+                  </div>
+                )}
+                {selectedRequest.buildingStatus && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Building Status</label>
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{selectedRequest.buildingStatus}</p>
+                  </div>
+                )}
+                {selectedRequest.developer && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Developer</label>
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{selectedRequest.developer}</p>
+                  </div>
+                )}
+                {selectedRequest.listingUrl && (
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Listing URL</label>
+                    <a href={selectedRequest.listingUrl} target="_blank" rel="noopener noreferrer" className="mt-1 text-sm text-brand-600 hover:underline">
+                      {selectedRequest.listingUrl}
+                    </a>
+                  </div>
+                )}
+                {selectedRequest.additionalNotes && (
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Additional Notes</label>
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white/90 whitespace-pre-wrap">{selectedRequest.additionalNotes}</p>
+                  </div>
+                )}
+                {selectedRequest.filePaths && selectedRequest.filePaths.length > 0 && (
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Attachments</label>
+                    <div className="mt-1 space-y-1">
+                      {selectedRequest.filePaths.map((file, idx) => (
+                        <a key={idx} href={file} target="_blank" rel="noopener noreferrer" className="block text-sm text-brand-600 hover:underline">
+                          {file}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {selectedRequest.createdAt && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 dark:text-gray-400">Created At</label>
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white/90">
+                      {new Date(selectedRequest.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setViewModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -51,7 +51,7 @@ const navItems: NavItem[] = [
 ];
 
 const AppSidebar: React.FC = () => {
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { isExpanded, isMobileOpen, isHovered, setIsHovered, pendingAnalysisCount } = useSidebar();
   const pathname = usePathname();
 
   const renderMenuItems = (
@@ -115,7 +115,14 @@ const AppSidebar: React.FC = () => {
                   {nav.icon}
                 </span>
                 {(isExpanded || isHovered || isMobileOpen) && (
-                  <span className={`menu-item-text`}>{nav.name}</span>
+                  <>
+                    <span className={`menu-item-text`}>{nav.name}</span>
+                    {nav.path === "/analysis-requests" && pendingAnalysisCount > 0 && (
+                      <span className="ml-auto flex items-center justify-center min-w-[24px] h-6 px-1.5 text-xs font-semibold text-white bg-error-500 rounded-full">
+                        {pendingAnalysisCount > 99 ? "99+" : pendingAnalysisCount}
+                      </span>
+                    )}
+                  </>
                 )}
               </Link>
             )

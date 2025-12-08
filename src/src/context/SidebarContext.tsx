@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { adminApiClient } from "@/lib/api";
 
 type SidebarContextType = {
   isExpanded: boolean;
@@ -7,6 +8,7 @@ type SidebarContextType = {
   isHovered: boolean;
   activeItem: string | null;
   openSubmenu: string | null;
+  pendingAnalysisCount: number;
   toggleSidebar: () => void;
   toggleMobileSidebar: () => void;
   setIsHovered: (isHovered: boolean) => void;
@@ -33,6 +35,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isHovered, setIsHovered] = useState(false);
   const [activeItem, setActiveItem] = useState<string | null>(null);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const [pendingAnalysisCount, setPendingAnalysisCount] = useState(0);
 
   useEffect(() => {
     const handleResize = () => {
@@ -49,6 +52,27 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => {
       window.removeEventListener("resize", handleResize);
     };
+  }, []);
+
+  // Fetch pending analysis requests count
+  useEffect(() => {
+    const fetchPendingCount = async () => {
+      try {
+        const stats = await adminApiClient.getDashboardStats();
+        setPendingAnalysisCount(stats.pendingAnalysisRequests || 0);
+      } catch (error) {
+        console.error("Error fetching pending analysis count:", error);
+      }
+    };
+
+    // Check if user is authenticated
+    const token = localStorage.getItem('admin_token');
+    if (token) {
+      fetchPendingCount();
+      // Refresh count every 30 seconds
+      const interval = setInterval(fetchPendingCount, 30000);
+      return () => clearInterval(interval);
+    }
   }, []);
 
   const toggleSidebar = () => {
@@ -71,6 +95,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
         isHovered,
         activeItem,
         openSubmenu,
+        pendingAnalysisCount,
         toggleSidebar,
         toggleMobileSidebar,
         setIsHovered,
