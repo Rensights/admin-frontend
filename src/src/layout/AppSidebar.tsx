@@ -10,6 +10,7 @@ import {
   ListIcon,
   UserCircleIcon,
   BoxIcon,
+  DocsIcon,
 } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
 
@@ -46,6 +47,14 @@ const navItems: NavItem[] = [
       { name: "Today's Deals", path: "/deals", pro: false },
       { name: "Available Deals", path: "/available-deals", pro: false },
       { name: "Archive Deals", path: "/deals/archive", pro: false },
+    ],
+  },
+  {
+    icon: <DocsIcon />,
+    name: "Translations",
+    subItems: [
+      { name: "Languages", path: "/languages", pro: false },
+      { name: "Translations", path: "/translations", pro: false },
     ],
   },
 ];

@@ -208,6 +208,122 @@ class AdminApiClient {
       method: 'DELETE',
     });
   }
+
+  // Translation management endpoints (uses main backend)
+  private async requestMainBackend<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const url = `${MAIN_BACKEND_URL}${endpoint}`;
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    };
+
+    if (this.token) {
+      headers['Authorization'] = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      let error;
+      try {
+        error = JSON.parse(errorText);
+      } catch {
+        error = { error: errorText || `Request failed with status ${response.status}` };
+      }
+      throw new Error(error.error || error.message || `Request failed with status ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async getAllTranslations(): Promise<Translation[]> {
+    return this.requestMainBackend<Translation[]>('/api/translations');
+  }
+
+  async getTranslationsByLanguage(languageCode: string): Promise<Translation[]> {
+    return this.requestMainBackend<Translation[]>(`/api/translations/language/${languageCode}`);
+  }
+
+  async getTranslationsByLanguageAndNamespace(languageCode: string, namespace: string): Promise<TranslationsResponse> {
+    return this.requestMainBackend<TranslationsResponse>(`/api/translations/${languageCode}/${namespace}`);
+  }
+
+  async createTranslation(request: TranslationRequest): Promise<Translation> {
+    return this.requestMainBackend<Translation>('/api/translations', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async updateTranslation(id: string, request: TranslationRequest): Promise<Translation> {
+    return this.requestMainBackend<Translation>(`/api/translations/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async deleteTranslation(id: string): Promise<void> {
+    return this.requestMainBackend<void>(`/api/translations/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getAvailableLanguages(): Promise<string[]> {
+    return this.requestMainBackend<string[]>('/api/translations/languages');
+  }
+
+  async getNamespaces(languageCode: string): Promise<string[]> {
+    return this.requestMainBackend<string[]>(`/api/translations/language/${languageCode}/namespaces`);
+  }
+
+  // Language management endpoints (uses main backend)
+  async getAllLanguages(): Promise<Language[]> {
+    return this.requestMainBackend<Language[]>('/api/languages/all');
+  }
+
+  async getEnabledLanguages(): Promise<Language[]> {
+    return this.requestMainBackend<Language[]>('/api/languages');
+  }
+
+  async getLanguageByCode(code: string): Promise<Language> {
+    return this.requestMainBackend<Language>(`/api/languages/${code}`);
+  }
+
+  async createLanguage(request: LanguageRequest): Promise<Language> {
+    return this.requestMainBackend<Language>('/api/languages', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async updateLanguage(id: string, request: LanguageRequest): Promise<Language> {
+    return this.requestMainBackend<Language>(`/api/languages/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async toggleLanguage(id: string): Promise<Language> {
+    return this.requestMainBackend<Language>(`/api/languages/${id}/toggle`, {
+      method: 'PATCH',
+    });
+  }
+
+  async setLanguageAsDefault(id: string): Promise<Language> {
+    return this.requestMainBackend<Language>(`/api/languages/${id}/set-default`, {
+      method: 'PATCH',
+    });
+  }
+
+  async deleteLanguage(id: string): Promise<void> {
+    return this.requestMainBackend<void>(`/api/languages/${id}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export interface AdminAuthResponse {
@@ -320,6 +436,52 @@ export interface Deal {
   approvedBy?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Translation {
+  id: string;
+  languageCode: string;
+  namespace: string;
+  translationKey: string;
+  translationValue: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TranslationRequest {
+  languageCode: string;
+  namespace: string;
+  translationKey: string;
+  translationValue: string;
+  description?: string;
+}
+
+export interface TranslationsResponse {
+  languageCode: string;
+  namespace: string;
+  translations: Record<string, string>;
+}
+
+export interface Language {
+  id: string;
+  code: string;
+  name: string;
+  nativeName?: string;
+  flag?: string;
+  enabled: boolean;
+  isDefault: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface LanguageRequest {
+  code: string;
+  name: string;
+  nativeName?: string;
+  flag?: string;
+  enabled?: boolean;
+  isDefault?: boolean;
 }
 
 export const adminApiClient = new AdminApiClient();
