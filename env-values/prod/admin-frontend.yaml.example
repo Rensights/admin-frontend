@@ -1,0 +1,61 @@
+# Production environment overrides for admin-frontend
+# EXAMPLE CONFIGURATION - Replace 'rensights.com' with your actual domain
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/rensights/admin-frontend
+  tag: ""  # Will be set by CI/CD with pipeline run number
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 3001
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+ingress:
+  enabled: true
+  className: "kong"
+  hosts:
+    - host: admin.rensights.com  # REPLACE: Change to your production admin domain (e.g., admin.yourdomain.com)
+      paths:
+        - path: /
+          pathType: Prefix
+  annotations:
+    konghq.com/strip-path: "false"
+    konghq.com/protocols: "https"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"  # Automatic SSL certificate
+  tls:
+    - secretName: admin-frontend-tls  # Cert-manager will create this automatically
+      hosts:
+        - admin.rensights.com  # REPLACE: Must match host above
+
+networkPolicy:
+  enabled: true
+  kongNamespaceLabels:
+    name: kong
+
+secrets:
+  frontendConfig: admin-frontend-config  # Kubernetes secret containing API URLs
+
+extraEnv:
+  # REPLACE: Update these URLs to match your production backend domains
+  NEXT_PUBLIC_API_URL: "https://api-admin.rensights.com"  # Admin backend URL
+  NEXT_PUBLIC_MAIN_BACKEND_URL: "https://api.rensights.com"  # Main app backend URL
+  
+  # Alternatively, you can set these in the Kubernetes secret 'admin-frontend-config':
+  # kubectl create secret generic admin-frontend-config \
+  #   --from-literal=NEXT_PUBLIC_API_URL=https://api-admin.rensights.com \
+  #   --from-literal=NEXT_PUBLIC_MAIN_BACKEND_URL=https://api.rensights.com \
+  #   --namespace=your-namespace \
+  #   --dry-run=client -o yaml | kubectl apply -f -
+
+
+

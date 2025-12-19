@@ -209,118 +209,100 @@ class AdminApiClient {
     });
   }
 
-  // Translation management endpoints (uses main backend)
-  private async requestMainBackend<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${MAIN_BACKEND_URL}${endpoint}`;
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string>),
-    };
-
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
-    }
-
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      let error;
-      try {
-        error = JSON.parse(errorText);
-      } catch {
-        error = { error: errorText || `Request failed with status ${response.status}` };
-      }
-      throw new Error(error.error || error.message || `Request failed with status ${response.status}`);
-    }
-
-    return response.json();
-  }
-
+  // Translation management endpoints (admin backend)
   async getAllTranslations(): Promise<Translation[]> {
-    return this.requestMainBackend<Translation[]>('/api/translations');
+    return this.request<Translation[]>('/api/admin/translations');
   }
 
   async getTranslationsByLanguage(languageCode: string): Promise<Translation[]> {
-    return this.requestMainBackend<Translation[]>(`/api/translations/language/${languageCode}`);
+    return this.request<Translation[]>(`/api/admin/translations/language/${languageCode}`);
   }
 
   async getTranslationsByLanguageAndNamespace(languageCode: string, namespace: string): Promise<TranslationsResponse> {
-    return this.requestMainBackend<TranslationsResponse>(`/api/translations/${languageCode}/${namespace}`);
+    // Use main backend for public read (frontend needs this)
+    const url = `${MAIN_BACKEND_URL}/api/translations/${languageCode}/${namespace}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+    return response.json();
   }
 
   async createTranslation(request: TranslationRequest): Promise<Translation> {
-    return this.requestMainBackend<Translation>('/api/translations', {
+    return this.request<Translation>('/api/admin/translations', {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
   async updateTranslation(id: string, request: TranslationRequest): Promise<Translation> {
-    return this.requestMainBackend<Translation>(`/api/translations/${id}`, {
+    return this.request<Translation>(`/api/admin/translations/${id}`, {
       method: 'PUT',
       body: JSON.stringify(request),
     });
   }
 
   async deleteTranslation(id: string): Promise<void> {
-    return this.requestMainBackend<void>(`/api/translations/${id}`, {
+    return this.request<void>(`/api/admin/translations/${id}`, {
       method: 'DELETE',
     });
   }
 
   async getAvailableLanguages(): Promise<string[]> {
-    return this.requestMainBackend<string[]>('/api/translations/languages');
+    return this.request<string[]>('/api/admin/translations/languages');
   }
 
   async getNamespaces(languageCode: string): Promise<string[]> {
-    return this.requestMainBackend<string[]>(`/api/translations/language/${languageCode}/namespaces`);
+    return this.request<string[]>(`/api/admin/translations/language/${languageCode}/namespaces`);
   }
 
-  // Language management endpoints (uses main backend)
+  // Language management endpoints (admin backend)
   async getAllLanguages(): Promise<Language[]> {
-    return this.requestMainBackend<Language[]>('/api/languages/all');
+    return this.request<Language[]>('/api/admin/languages');
   }
 
   async getEnabledLanguages(): Promise<Language[]> {
-    return this.requestMainBackend<Language[]>('/api/languages');
+    // Use main backend for public read (frontend needs this)
+    const url = `${MAIN_BACKEND_URL}/api/languages`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+    return response.json();
   }
 
   async getLanguageByCode(code: string): Promise<Language> {
-    return this.requestMainBackend<Language>(`/api/languages/${code}`);
+    return this.request<Language>(`/api/admin/languages/${code}`);
   }
 
   async createLanguage(request: LanguageRequest): Promise<Language> {
-    return this.requestMainBackend<Language>('/api/languages', {
+    return this.request<Language>('/api/admin/languages', {
       method: 'POST',
       body: JSON.stringify(request),
     });
   }
 
   async updateLanguage(id: string, request: LanguageRequest): Promise<Language> {
-    return this.requestMainBackend<Language>(`/api/languages/${id}`, {
+    return this.request<Language>(`/api/admin/languages/${id}`, {
       method: 'PUT',
       body: JSON.stringify(request),
     });
   }
 
   async toggleLanguage(id: string): Promise<Language> {
-    return this.requestMainBackend<Language>(`/api/languages/${id}/toggle`, {
+    return this.request<Language>(`/api/admin/languages/${id}/toggle`, {
       method: 'PATCH',
     });
   }
 
   async setLanguageAsDefault(id: string): Promise<Language> {
-    return this.requestMainBackend<Language>(`/api/languages/${id}/set-default`, {
+    return this.request<Language>(`/api/admin/languages/${id}/set-default`, {
       method: 'PATCH',
     });
   }
 
   async deleteLanguage(id: string): Promise<void> {
-    return this.requestMainBackend<void>(`/api/languages/${id}`, {
+    return this.request<void>(`/api/admin/languages/${id}`, {
       method: 'DELETE',
     });
   }
