@@ -55,6 +55,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "Languages", path: "/languages", pro: false },
       { name: "Translations", path: "/translations", pro: false },
+      { name: "Landing Page", path: "/landing-page", pro: false },
     ],
   },
 ];

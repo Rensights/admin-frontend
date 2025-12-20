@@ -306,6 +306,49 @@ class AdminApiClient {
       method: 'DELETE',
     });
   }
+
+  // Landing Page Content Management
+  async getAllLandingPageContent(): Promise<LandingPageContent[]> {
+    return this.request<LandingPageContent[]>(`/api/admin/landing-page`);
+  }
+
+  async getLandingPageContentBySection(section: string): Promise<LandingPageContent[]> {
+    return this.request<LandingPageContent[]>(`/api/admin/landing-page/section/${section}`);
+  }
+
+  async getLandingPageSection(section: string, languageCode: string): Promise<LandingPageSection> {
+    return this.request<LandingPageSection>(`/api/admin/landing-page/section/${section}/language/${languageCode}`);
+  }
+
+  async getAllLandingPageSections(languageCode: string): Promise<Record<string, LandingPageSection>> {
+    return this.request<Record<string, LandingPageSection>>(`/api/admin/landing-page/language/${languageCode}`);
+  }
+
+  async createOrUpdateLandingPageContent(request: LandingPageContentRequest): Promise<LandingPageContent> {
+    return this.request<LandingPageContent>('/api/admin/landing-page', {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async updateLandingPageContent(id: string, request: LandingPageContentRequest): Promise<LandingPageContent> {
+    return this.request<LandingPageContent>(`/api/admin/landing-page/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(request),
+    });
+  }
+
+  async deleteLandingPageContent(id: string): Promise<void> {
+    return this.request<void>(`/api/admin/landing-page/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async deleteLandingPageSection(section: string, languageCode: string): Promise<void> {
+    return this.request<void>(`/api/admin/landing-page/section/${section}/language/${languageCode}`, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export interface AdminAuthResponse {
@@ -418,6 +461,35 @@ export interface Deal {
   approvedBy?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface LandingPageContent {
+  id: string;
+  section: string;
+  languageCode: string;
+  fieldKey: string;
+  contentType: 'text' | 'image' | 'video' | 'json';
+  contentValue: string;
+  displayOrder?: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LandingPageContentRequest {
+  section: string;
+  languageCode: string;
+  fieldKey: string;
+  contentType: 'text' | 'image' | 'video' | 'json';
+  contentValue: string;
+  displayOrder?: number;
+  isActive: boolean;
+}
+
+export interface LandingPageSection {
+  section: string;
+  languageCode: string;
+  content: Record<string, any>;
 }
 
 export interface Translation {
