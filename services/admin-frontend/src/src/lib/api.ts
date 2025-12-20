@@ -286,6 +286,17 @@ export interface Deal {
   estimateRange?: string;
   discount?: string;
   rentalYield?: string;
+  grossRentalYield?: string;
+  propertyType?: string;
+  priceVsEstimations?: string;
+  pricePerSqft?: number;
+  pricePerSqftVsMarket?: number;
+  propertyDescription?: string;
+  buildingFeatures?: string;
+  serviceCharge?: string;
+  developer?: string;
+  propertyLink?: string;
+  propertyId?: string;
   buildingStatus: 'READY' | 'OFF_PLAN';
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   batchDate?: string;
@@ -293,6 +304,9 @@ export interface Deal {
   approvedBy?: string;
   createdAt: string;
   updatedAt: string;
+  // Related deals
+  listedDeals?: Deal[];
+  recentSales?: Deal[];
 }
 
 export const adminApiClient = new AdminApiClient();

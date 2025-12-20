@@ -47,9 +47,18 @@ export default function DealsPage() {
     }
   }, [currentPage, cityFilter]);
 
-  const handleViewDetails = useCallback((deal: Deal) => {
-    setSelectedDeal(deal);
-    setDetailModalOpen(true);
+  const handleViewDetails = useCallback(async (deal: Deal) => {
+    try {
+      // Fetch full deal details with relationships
+      const fullDeal = await adminApiClient.getDealById(deal.id);
+      setSelectedDeal(fullDeal);
+      setDetailModalOpen(true);
+    } catch (error: any) {
+      console.error("Error loading deal details:", error);
+      // Fallback to basic deal if fetch fails
+      setSelectedDeal(deal);
+      setDetailModalOpen(true);
+    }
   }, []);
 
   const handleEdit = useCallback((deal: Deal) => {
@@ -363,6 +372,48 @@ export default function DealsPage() {
                 <div className="detail-row">
                   <strong>Created At:</strong> {selectedDeal.createdAt ? new Date(selectedDeal.createdAt).toLocaleString() : 'N/A'}
                 </div>
+                
+                {/* Listed Deals Section */}
+                {selectedDeal.listedDeals && selectedDeal.listedDeals.length > 0 && (
+                  <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #ddd' }}>
+                    <h3 style={{ marginBottom: '15px', fontSize: '18px', fontWeight: 'bold' }}>Listed Deals ({selectedDeal.listedDeals.length})</h3>
+                    <div style={{ display: 'grid', gap: '10px' }}>
+                      {selectedDeal.listedDeals.map((listedDeal) => (
+                        <div key={listedDeal.id} style={{ padding: '10px', border: '1px solid #eee', borderRadius: '4px', backgroundColor: '#f9f9f9' }}>
+                          <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>{listedDeal.name}</div>
+                          <div style={{ fontSize: '14px', color: '#666' }}>
+                            {listedDeal.location} • {listedDeal.city} • {listedDeal.area}
+                          </div>
+                          <div style={{ fontSize: '14px', marginTop: '5px' }}>
+                            <strong>Price:</strong> {listedDeal.priceValue ? `AED ${listedDeal.priceValue.toLocaleString()}` : listedDeal.listedPrice}
+                            {listedDeal.size && <span> • <strong>Size:</strong> {listedDeal.size}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Recent Sales Section */}
+                {selectedDeal.recentSales && selectedDeal.recentSales.length > 0 && (
+                  <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #ddd' }}>
+                    <h3 style={{ marginBottom: '15px', fontSize: '18px', fontWeight: 'bold' }}>Recent Sales ({selectedDeal.recentSales.length})</h3>
+                    <div style={{ display: 'grid', gap: '10px' }}>
+                      {selectedDeal.recentSales.map((recentSale) => (
+                        <div key={recentSale.id} style={{ padding: '10px', border: '1px solid #eee', borderRadius: '4px', backgroundColor: '#f9f9f9' }}>
+                          <div style={{ fontWeight: 'bold', marginBottom: '5px' }}>{recentSale.name}</div>
+                          <div style={{ fontSize: '14px', color: '#666' }}>
+                            {recentSale.location} • {recentSale.city} • {recentSale.area}
+                          </div>
+                          <div style={{ fontSize: '14px', marginTop: '5px' }}>
+                            <strong>Price:</strong> {recentSale.priceValue ? `AED ${recentSale.priceValue.toLocaleString()}` : recentSale.listedPrice}
+                            {recentSale.size && <span> • <strong>Size:</strong> {recentSale.size}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="modal-footer">
                 <button className="btn-secondary" onClick={() => setDetailModalOpen(false)}>
