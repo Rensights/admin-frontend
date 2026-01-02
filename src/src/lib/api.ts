@@ -103,6 +103,13 @@ class AdminApiClient {
     return this.request<DashboardStats>('/api/admin/dashboard/stats');
   }
 
+  // Sync all users invoices
+  async syncAllUsersInvoices(): Promise<{ message: string; syncedCount: number }> {
+    return this.request<{ message: string; syncedCount: number }>('/api/admin/invoices/sync-all', {
+      method: 'POST',
+    });
+  }
+
   // Analysis request endpoints
   async getAllAnalysisRequests(page: number = 0, size: number = 20): Promise<PaginatedResponse<AnalysisRequest>> {
     return this.request<PaginatedResponse<AnalysisRequest>>(`/api/admin/analysis-requests?page=${page}&size=${size}`);
