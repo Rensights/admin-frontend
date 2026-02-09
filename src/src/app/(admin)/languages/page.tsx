@@ -56,6 +56,7 @@ export default function LanguagesPage() {
       const newLanguage = await adminApiClient.createLanguage(formData);
       setLanguages([...languages, newLanguage]);
       await seedTranslations(newLanguage.code);
+      router.push(`/translations?lang=${newLanguage.code}`);
       setIsCreating(false);
       setFormData({
         code: "",
@@ -418,4 +419,3 @@ export default function LanguagesPage() {
     </div>
   );
 }
-

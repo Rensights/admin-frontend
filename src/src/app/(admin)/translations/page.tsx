@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { adminApiClient, Translation, TranslationRequest } from "@/lib/api";
 
 export default function TranslationsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [translations, setTranslations] = useState<Translation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,6 +17,8 @@ export default function TranslationsPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editingTranslation, setEditingTranslation] = useState<Translation | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isSeedingDefaults, setIsSeedingDefaults] = useState(false);
+  const [seedMessage, setSeedMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState<TranslationRequest>({
     languageCode: "en",
     namespace: "common",
@@ -23,6 +26,17 @@ export default function TranslationsPage() {
     translationValue: "",
     description: "",
   });
+
+  useEffect(() => {
+    const langParam = searchParams?.get("lang");
+    const nsParam = searchParams?.get("ns");
+    if (langParam) {
+      setSelectedLanguage(langParam);
+    }
+    if (nsParam) {
+      setSelectedNamespace(nsParam);
+    }
+  }, [searchParams]);
 
   const loadLanguages = useCallback(async () => {
     try {
@@ -95,6 +109,7 @@ export default function TranslationsPage() {
 
   const handleCreate = async () => {
     setError(null);
+    setSeedMessage(null);
     try {
       const newTranslation = await adminApiClient.createTranslation({
         ...formData,
@@ -118,6 +133,7 @@ export default function TranslationsPage() {
   const handleUpdate = async () => {
     if (!editingTranslation) return;
     setError(null);
+    setSeedMessage(null);
     try {
       const updated = await adminApiClient.updateTranslation(editingTranslation.id, {
         ...formData,
@@ -142,11 +158,42 @@ export default function TranslationsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this translation?")) return;
     setError(null);
+    setSeedMessage(null);
     try {
       await adminApiClient.deleteTranslation(id);
       setTranslations(translations.filter(t => t.id !== id));
     } catch (err: any) {
       setError(err.message || "Failed to delete translation");
+    }
+  };
+
+  const handleSeedDefaults = async () => {
+    setError(null);
+    setSeedMessage(null);
+    setIsSeedingDefaults(true);
+    try {
+      const url = new URL(`/api/admin/translations/seed-default`, adminApiClient.getBaseUrl());
+      url.searchParams.set("language", selectedLanguage);
+      url.searchParams.set("overwrite", "false");
+      const response = await fetch(url.toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(adminApiClient.getAuthHeaders() || {}),
+        },
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `Request failed with status ${response.status}`);
+      }
+      const seeded = await response.json();
+      setSeedMessage(`Seeded ${seeded.length} defaults for ${selectedLanguage.toUpperCase()}.`);
+      await loadTranslations();
+      await loadNamespaces();
+    } catch (err: any) {
+      setError(err.message || "Failed to seed default translations");
+    } finally {
+      setIsSeedingDefaults(false);
     }
   };
 
@@ -212,6 +259,11 @@ export default function TranslationsPage() {
           {error}
         </div>
       )}
+      {seedMessage && (
+        <div className="p-4 mb-4 text-sm text-green-600 bg-green-50 rounded-lg dark:bg-green-500/10 dark:text-green-400">
+          {seedMessage}
+        </div>
+      )}
 
       {/* Filters */}
       <div className="mb-6 flex flex-wrap gap-4 items-end">
@@ -248,6 +300,13 @@ export default function TranslationsPage() {
           className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors"
         >
           + Add Translation
+        </button>
+        <button
+          onClick={handleSeedDefaults}
+          className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-60"
+          disabled={isSeedingDefaults}
+        >
+          {isSeedingDefaults ? "Seeding..." : "Seed Default EN Keys"}
         </button>
       </div>
 
@@ -367,4 +426,3 @@ export default function TranslationsPage() {
     </div>
   );
 }
-

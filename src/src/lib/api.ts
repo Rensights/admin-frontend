@@ -44,6 +44,17 @@ class AdminApiClient {
     return response.json();
   }
 
+  getBaseUrl() {
+    return API_URL;
+  }
+
+  getAuthHeaders() {
+    if (!this.token) {
+      return null;
+    }
+    return { Authorization: `Bearer ${this.token}` };
+  }
+
   setToken(token: string) {
     this.token = token;
     if (typeof window !== 'undefined') {
