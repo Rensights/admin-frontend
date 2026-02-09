@@ -389,72 +389,37 @@ class AdminApiClient {
   }
 
   async getArticles(): Promise<Article[]> {
-    const url = `${MAIN_BACKEND_URL}/api/admin/articles`;
-    const response = await fetch(url, {
-      headers: this.getAuthHeaders() || undefined,
-    });
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`);
-    }
-    return response.json();
+    return this.request<Article[]>(`/api/admin/articles`);
   }
 
   async createArticle(payload: Partial<Article>): Promise<Article> {
-    const url = `${MAIN_BACKEND_URL}/api/admin/articles`;
-    const response = await fetch(url, {
+    return this.request<Article>(`/api/admin/articles`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", ...(this.getAuthHeaders() || {}) },
       body: JSON.stringify(payload),
     });
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`);
-    }
-    return response.json();
   }
 
   async updateArticle(id: string, payload: Partial<Article>): Promise<Article> {
-    const url = `${MAIN_BACKEND_URL}/api/admin/articles/${id}`;
-    const response = await fetch(url, {
+    return this.request<Article>(`/api/admin/articles/${id}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json", ...(this.getAuthHeaders() || {}) },
       body: JSON.stringify(payload),
     });
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`);
-    }
-    return response.json();
   }
 
   async deleteArticle(id: string): Promise<void> {
-    const url = `${MAIN_BACKEND_URL}/api/admin/articles/${id}`;
-    const response = await fetch(url, {
+    await this.request<void>(`/api/admin/articles/${id}`, {
       method: "DELETE",
-      headers: this.getAuthHeaders() || undefined,
     });
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`);
-    }
   }
 
   async setArticlesEnabled(enabled: boolean): Promise<{ enabled: boolean }> {
-    const url = `${MAIN_BACKEND_URL}/api/admin/articles/settings?enabled=${enabled}`;
-    const response = await fetch(url, {
+    return this.request<{ enabled: boolean }>(`/api/admin/articles/settings?enabled=${enabled}`, {
       method: "PUT",
-      headers: this.getAuthHeaders() || undefined,
     });
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`);
-    }
-    return response.json();
   }
 
   async getArticlesEnabled(): Promise<{ enabled: boolean }> {
-    const url = `${MAIN_BACKEND_URL}/api/articles/settings`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Request failed with status ${response.status}`);
-    }
-    return response.json();
+    return this.request<{ enabled: boolean }>(`/api/admin/articles/settings`);
   }
 }
 
