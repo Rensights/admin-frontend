@@ -12,6 +12,37 @@ export default function SubscriptionsPage() {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
+  const downloadCsv = () => {
+    const headers = ["User ID", "Email", "Plan Type", "Status", "Start Date", "End Date"];
+    const rows = subscriptions.map((subscription) => [
+      subscription.userId || "",
+      subscription.userEmail || "",
+      subscription.planType || "",
+      subscription.status || "",
+      subscription.startDate ? new Date(subscription.startDate).toISOString() : "",
+      subscription.endDate ? new Date(subscription.endDate).toISOString() : "",
+    ]);
+
+    const escapeCell = (value: string) => {
+      const safe = String(value ?? "");
+      return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+    };
+
+    const csv = [headers, ...rows]
+      .map((row) => row.map(escapeCell).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "subscriptions.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const loadSubscriptions = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -72,6 +103,15 @@ export default function SubscriptionsPage() {
           {error}
         </div>
       )}
+
+      <div className="mb-4 flex justify-end">
+        <button
+          onClick={downloadCsv}
+          className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors"
+        >
+          Download CSV
+        </button>
+      </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
         <div className="overflow-x-auto">

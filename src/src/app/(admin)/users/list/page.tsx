@@ -14,6 +14,41 @@ export default function UsersListPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
 
+  const downloadCsv = () => {
+    const headers = ["Email", "Name", "Tier", "Status", "Created"];
+    const rows = users.map((user) => {
+      const name = user.firstName || user.lastName 
+        ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
+        : "N/A";
+      return [
+        user.email || "",
+        name,
+        user.userTier || "",
+        user.isActive ? "Active" : "Inactive",
+        user.createdAt ? new Date(user.createdAt).toISOString() : "",
+      ];
+    });
+
+    const escapeCell = (value: string) => {
+      const safe = String(value ?? "");
+      return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+    };
+
+    const csv = [headers, ...rows]
+      .map((row) => row.map(escapeCell).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "users.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const loadUsers = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -75,6 +110,15 @@ export default function UsersListPage() {
           {error}
         </div>
       )}
+
+      <div className="mb-4 flex justify-end">
+        <button
+          onClick={downloadCsv}
+          className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors"
+        >
+          Download CSV
+        </button>
+      </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
         <div className="overflow-x-auto">
@@ -145,4 +189,3 @@ export default function UsersListPage() {
     </div>
   );
 }
-
