@@ -22,6 +22,7 @@ export default function ArticlesAdminPage() {
   const [enabled, setEnabled] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [form, setForm] = useState<Partial<Article>>(emptyForm);
 
   const loadData = useCallback(async () => {
@@ -57,6 +58,7 @@ export default function ArticlesAdminPage() {
     setForm(emptyForm);
     setIsEditing(false);
     setEditingId(null);
+    setIsFormOpen(false);
   };
 
   const handleSave = async () => {
@@ -82,6 +84,7 @@ export default function ArticlesAdminPage() {
   const handleEdit = (article: Article) => {
     setIsEditing(true);
     setEditingId(article.id);
+    setIsFormOpen(true);
     setForm({
       title: article.title,
       slug: article.slug,
@@ -168,91 +171,103 @@ export default function ArticlesAdminPage() {
         </div>
       )}
 
-      <div className="mb-6 p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-        <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
-          {isEditing ? "Edit Article" : "Create Article"}
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Title
-            </label>
-            <input
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              value={form.title || ""}
-              onChange={(e) => setForm({ ...form, title: e.target.value })}
-            />
+      {isFormOpen && (
+        <div className="mb-6 p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
+            {isEditing ? "Edit Article" : "Create Article"}
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Title
+              </label>
+              <input
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                value={form.title || ""}
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Slug
+              </label>
+              <input
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                value={form.slug || ""}
+                onChange={(e) => setForm({ ...form, slug: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Cover Image URL
+              </label>
+              <input
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                value={form.coverImage || ""}
+                onChange={(e) => setForm({ ...form, coverImage: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Published At
+              </label>
+              <input
+                type="datetime-local"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                value={form.publishedAt ? form.publishedAt.slice(0, 16) : ""}
+                onChange={(e) => setForm({ ...form, publishedAt: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Excerpt
+              </label>
+              <textarea
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows={3}
+                value={form.excerpt || ""}
+                onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Content
+              </label>
+              <textarea
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows={8}
+                value={form.content || ""}
+                onChange={(e) => setForm({ ...form, content: e.target.value })}
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Slug
-            </label>
-            <input
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              value={form.slug || ""}
-              onChange={(e) => setForm({ ...form, slug: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Cover Image URL
-            </label>
-            <input
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              value={form.coverImage || ""}
-              onChange={(e) => setForm({ ...form, coverImage: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Published At
-            </label>
-            <input
-              type="datetime-local"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              value={form.publishedAt ? form.publishedAt.slice(0, 16) : ""}
-              onChange={(e) => setForm({ ...form, publishedAt: e.target.value })}
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Excerpt
-            </label>
-            <textarea
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              rows={3}
-              value={form.excerpt || ""}
-              onChange={(e) => setForm({ ...form, excerpt: e.target.value })}
-            />
-          </div>
-          <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Content
-            </label>
-            <textarea
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              rows={8}
-              value={form.content || ""}
-              onChange={(e) => setForm({ ...form, content: e.target.value })}
-            />
-          </div>
-        </div>
-        <div className="mt-4 flex gap-2">
-          <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors"
-          >
-            {isEditing ? "Update" : "Create"}
-          </button>
-          {isEditing && (
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={handleSave}
+              className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors"
+            >
+              {isEditing ? "Update" : "Create"}
+            </button>
             <button
               onClick={resetForm}
               className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg"
             >
               Cancel
             </button>
-          )}
+          </div>
         </div>
+      )}
+
+      <div className="mb-4 flex items-center justify-between">
+        <button
+          onClick={() => {
+            resetForm();
+            setIsFormOpen(true);
+          }}
+          className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors"
+        >
+          Create Article
+        </button>
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
