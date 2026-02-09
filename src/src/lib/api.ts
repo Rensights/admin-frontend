@@ -41,7 +41,15 @@ class AdminApiClient {
       throw new Error(error.error || error.message || `Request failed with status ${response.status}`);
     }
 
-    return response.json();
+    const responseText = await response.text();
+    if (!responseText) {
+      return undefined as T;
+    }
+    try {
+      return JSON.parse(responseText) as T;
+    } catch {
+      return responseText as unknown as T;
+    }
   }
 
   getBaseUrl() {
@@ -389,21 +397,24 @@ class AdminApiClient {
   }
 
   async getArticles(): Promise<Article[]> {
-    return this.request<Article[]>(`/api/admin/articles`);
+    const list = await this.request<any[]>(`/api/admin/articles`);
+    return Array.isArray(list) ? list.map((item) => this.normalizeArticle(item)) : [];
   }
 
   async createArticle(payload: Partial<Article>): Promise<Article> {
-    return this.request<Article>(`/api/admin/articles/create`, {
+    const created = await this.request<any>(`/api/admin/articles/create`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
+    return this.normalizeArticle(created);
   }
 
   async updateArticle(id: string, payload: Partial<Article>): Promise<Article> {
-    return this.request<Article>(`/api/admin/articles/update/${id}`, {
+    const updated = await this.request<any>(`/api/admin/articles/update/${id}`, {
       method: "PUT",
       body: JSON.stringify(payload),
     });
+    return this.normalizeArticle(updated);
   }
 
   async deleteArticle(id: string): Promise<void> {
@@ -423,9 +434,17 @@ class AdminApiClient {
   }
 
   async setArticleEnabled(id: string, enabled: boolean): Promise<Article> {
-    return this.request<Article>(`/api/admin/articles/enable/${id}?enabled=${enabled}`, {
+    const updated = await this.request<any>(`/api/admin/articles/enable/${id}?enabled=${enabled}`, {
       method: "PUT",
     });
+    return this.normalizeArticle(updated);
+  }
+
+  private normalizeArticle(article: any): Article {
+    return {
+      ...article,
+      isActive: article?.isActive ?? article?.active ?? false,
+    };
   }
 }
 
