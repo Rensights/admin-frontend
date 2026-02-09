@@ -381,6 +381,7 @@ export interface User {
 export interface Subscription {
   id: string;
   userId: string;
+  userEmail?: string;
   planType: 'FREE' | 'PREMIUM' | 'ENTERPRISE';
   status: 'ACTIVE' | 'CANCELLED' | 'EXPIRED';
   startDate: string;
