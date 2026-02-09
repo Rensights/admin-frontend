@@ -9,7 +9,6 @@ import {
   HorizontaLDots,
   ListIcon,
   UserCircleIcon,
-  BoxIcon,
   DocsIcon,
 } from "../icons/index";
 import SidebarWidget from "./SidebarWidget";
@@ -41,21 +40,11 @@ const navItems: NavItem[] = [
     path: "/analysis-requests",
   },
   {
-    icon: <BoxIcon />,
-    name: "Deals",
-    subItems: [
-      { name: "Today's Deals", path: "/deals", pro: false },
-      { name: "Available Deals", path: "/available-deals", pro: false },
-      { name: "Archive Deals", path: "/deals/archive", pro: false },
-    ],
-  },
-  {
     icon: <DocsIcon />,
     name: "Translations",
     subItems: [
       { name: "Languages", path: "/languages", pro: false },
       { name: "Translations", path: "/translations", pro: false },
-      { name: "Landing Page", path: "/landing-page", pro: false },
     ],
   },
 ];
