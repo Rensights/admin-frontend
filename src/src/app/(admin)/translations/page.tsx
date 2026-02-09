@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { adminApiClient, Translation, TranslationRequest } from "@/lib/api";
 
-export default function TranslationsPage() {
+function TranslationsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [translations, setTranslations] = useState<Translation[]>([]);
@@ -424,5 +424,22 @@ export default function TranslationsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function TranslationsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+            <p className="mt-4 text-gray-500">Loading translations...</p>
+          </div>
+        </div>
+      }
+    >
+      <TranslationsPageContent />
+    </Suspense>
   );
 }
