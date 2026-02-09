@@ -109,9 +109,7 @@ export default function ArticlesAdminPage() {
 
   const handleToggleActive = async (article: Article) => {
     try {
-      const updated = await adminApiClient.updateArticle(article.id, {
-        isActive: !article.isActive,
-      });
+      const updated = await adminApiClient.setArticleEnabled(article.id, !article.isActive);
       setArticles(articles.map((item) => (item.id === updated.id ? updated : item)));
     } catch (err: any) {
       setError(err.message || "Failed to update status");
@@ -298,14 +296,11 @@ export default function ArticlesAdminPage() {
                       {article.publishedAt ? new Date(article.publishedAt).toLocaleString() : "-"}
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <button
-                        onClick={() => handleToggleActive(article)}
-                        className={`px-2 py-1 rounded text-xs font-semibold ${
-                          article.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
-                        }`}
-                      >
+                      <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                        article.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"
+                      }`}>
                         {article.isActive ? "Active" : "Disabled"}
-                      </button>
+                      </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
                       <button
@@ -313,6 +308,12 @@ export default function ArticlesAdminPage() {
                         className="text-brand-600 hover:text-brand-900 mr-4"
                       >
                         Edit
+                      </button>
+                      <button
+                        onClick={() => handleToggleActive(article)}
+                        className="text-gray-600 hover:text-gray-900 mr-4"
+                      >
+                        {article.isActive ? "Disable" : "Enable"}
                       </button>
                       <button
                         onClick={() => handleDelete(article.id)}

@@ -407,7 +407,7 @@ class AdminApiClient {
   }
 
   async deleteArticle(id: string): Promise<void> {
-    await this.request<void>(`/api/admin/articles/delete/${id}`, {
+    await this.request<void>(`/api/admin/articles/delete?id=${id}`, {
       method: "DELETE",
     });
   }
@@ -420,6 +420,12 @@ class AdminApiClient {
 
   async getArticlesEnabled(): Promise<{ enabled: boolean }> {
     return this.request<{ enabled: boolean }>(`/api/admin/articles/enable`);
+  }
+
+  async setArticleEnabled(id: string, enabled: boolean): Promise<Article> {
+    return this.request<Article>(`/api/admin/articles/enable/${id}?enabled=${enabled}`, {
+      method: "PUT",
+    });
   }
 }
 
