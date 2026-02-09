@@ -12,6 +12,8 @@ export default function LanguagesPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [editingLanguage, setEditingLanguage] = useState<Language | null>(null);
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [seedStatus, setSeedStatus] = useState<string | null>(null);
   const [formData, setFormData] = useState<LanguageRequest>({
     code: "",
     name: "",
@@ -49,9 +51,11 @@ export default function LanguagesPage() {
 
   const handleCreate = async () => {
     setError(null);
+    setSeedStatus(null);
     try {
       const newLanguage = await adminApiClient.createLanguage(formData);
       setLanguages([...languages, newLanguage]);
+      await seedTranslations(newLanguage.code);
       setIsCreating(false);
       setFormData({
         code: "",
@@ -153,6 +157,7 @@ export default function LanguagesPage() {
     setIsEditing(false);
     setIsCreating(false);
     setEditingLanguage(null);
+    setSeedStatus(null);
     setFormData({
       code: "",
       name: "",
@@ -161,6 +166,43 @@ export default function LanguagesPage() {
       enabled: true,
       isDefault: false,
     });
+  };
+
+  const seedTranslations = async (newLanguageCode: string) => {
+    const sourceLanguage =
+      languages.find((lang) => lang.isDefault)?.code ||
+      (languages.find((lang) => lang.code === "en")?.code || languages[0]?.code);
+
+    if (!sourceLanguage || sourceLanguage === newLanguageCode) {
+      return;
+    }
+
+    setIsSeeding(true);
+    setSeedStatus("Seeding translations from default language...");
+
+    try {
+      const sourceTranslations = await adminApiClient.getTranslationsByLanguage(sourceLanguage);
+      let seededCount = 0;
+      for (const translation of sourceTranslations) {
+        try {
+          await adminApiClient.createTranslation({
+            languageCode: newLanguageCode,
+            namespace: translation.namespace,
+            translationKey: translation.translationKey,
+            translationValue: translation.translationValue,
+            description: translation.description || "",
+          });
+          seededCount += 1;
+        } catch (err) {
+          // Ignore duplicates or individual failures to continue seeding.
+        }
+      }
+      setSeedStatus(`Seeded ${seededCount} translations from ${sourceLanguage.toUpperCase()}.`);
+    } catch (err: any) {
+      setError(err.message || "Failed to seed translations for the new language");
+    } finally {
+      setIsSeeding(false);
+    }
   };
 
   if (loading) {
@@ -184,6 +226,11 @@ export default function LanguagesPage() {
       {error && (
         <div className="p-4 mb-4 text-sm text-red-600 bg-red-50 rounded-lg dark:bg-red-500/10 dark:text-red-400">
           {error}
+        </div>
+      )}
+      {seedStatus && (
+        <div className="p-4 mb-4 text-sm text-green-600 bg-green-50 rounded-lg dark:bg-green-500/10 dark:text-green-400">
+          {seedStatus}
         </div>
       )}
 
@@ -270,8 +317,9 @@ export default function LanguagesPage() {
             <button
               onClick={isEditing ? handleUpdate : handleCreate}
               className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors"
+              disabled={isSeeding}
             >
-              {isEditing ? "Update" : "Create"}
+              {isEditing ? "Update" : isSeeding ? "Seeding..." : "Create"}
             </button>
             <button
               onClick={cancelEdit}
@@ -385,6 +433,5 @@ export default function LanguagesPage() {
     </div>
   );
 }
-
 
 
