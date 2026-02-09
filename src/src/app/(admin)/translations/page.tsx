@@ -168,13 +168,16 @@ function TranslationsPageContent() {
   };
 
   const handleSeedDefaults = async () => {
+    if (!confirm(`Seed default translations for ${selectedLanguage.toUpperCase()} and overwrite existing values?`)) {
+      return;
+    }
     setError(null);
     setSeedMessage(null);
     setIsSeedingDefaults(true);
     try {
       const url = new URL(`/api/admin/translations/seed-default`, adminApiClient.getBaseUrl());
       url.searchParams.set("language", selectedLanguage);
-      url.searchParams.set("overwrite", "false");
+      url.searchParams.set("overwrite", "true");
       const response = await fetch(url.toString(), {
         method: "POST",
         headers: {
@@ -306,7 +309,7 @@ function TranslationsPageContent() {
           className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-60"
           disabled={isSeedingDefaults}
         >
-          {isSeedingDefaults ? "Seeding..." : "Seed Default EN Keys"}
+          {isSeedingDefaults ? "Seeding..." : "Seed Defaults (Overwrite)"}
         </button>
       </div>
 
