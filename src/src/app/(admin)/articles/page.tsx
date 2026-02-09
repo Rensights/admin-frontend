@@ -28,12 +28,11 @@ export default function ArticlesAdminPage() {
     setLoading(true);
     setError(null);
     try {
-      const [list, settings] = await Promise.all([
+      const [list] = await Promise.all([
         adminApiClient.getArticles(),
-        adminApiClient.getArticlesEnabled(),
       ]);
       setArticles(list);
-      setEnabled(settings.enabled);
+      setEnabled(true);
     } catch (err: any) {
       setError(err.message || "Failed to load articles");
       if (err.message?.includes("401") || err.message?.includes("Unauthorized")) {
@@ -118,8 +117,8 @@ export default function ArticlesAdminPage() {
   const handleToggleEnabled = async () => {
     try {
       const next = !enabled;
-      const result = await adminApiClient.setArticlesEnabled(next);
-      setEnabled(result.enabled);
+      await adminApiClient.setArticlesEnabled(next);
+      setEnabled(next);
     } catch (err: any) {
       setError(err.message || "Failed to update settings");
     }

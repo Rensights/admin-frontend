@@ -393,33 +393,35 @@ class AdminApiClient {
   }
 
   async createArticle(payload: Partial<Article>): Promise<Article> {
-    return this.request<Article>(`/api/admin/articles`, {
+    return this.request<Article>(`/api/admin/articles/create`, {
       method: "POST",
       body: JSON.stringify(payload),
     });
   }
 
   async updateArticle(id: string, payload: Partial<Article>): Promise<Article> {
-    return this.request<Article>(`/api/admin/articles/${id}`, {
+    return this.request<Article>(`/api/admin/articles/update/${id}`, {
       method: "PUT",
       body: JSON.stringify(payload),
     });
   }
 
   async deleteArticle(id: string): Promise<void> {
-    await this.request<void>(`/api/admin/articles/${id}`, {
+    await this.request<void>(`/api/admin/articles/delete/${id}`, {
       method: "DELETE",
     });
   }
 
   async setArticlesEnabled(enabled: boolean): Promise<{ enabled: boolean }> {
-    return this.request<{ enabled: boolean }>(`/api/admin/articles/settings?enabled=${enabled}`, {
+    return this.request<{ enabled: boolean }>(`/api/admin/articles/enable?enabled=${enabled}`, {
       method: "PUT",
     });
   }
 
   async getArticlesEnabled(): Promise<{ enabled: boolean }> {
-    return this.request<{ enabled: boolean }>(`/api/admin/articles/settings`);
+    return this.request<{ enabled: boolean }>(`/api/admin/articles/enable?enabled=true`, {
+      method: "PUT",
+    });
   }
 }
 
