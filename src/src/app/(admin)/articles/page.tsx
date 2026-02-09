@@ -28,11 +28,12 @@ export default function ArticlesAdminPage() {
     setLoading(true);
     setError(null);
     try {
-      const [list] = await Promise.all([
+      const [list, settings] = await Promise.all([
         adminApiClient.getArticles(),
+        adminApiClient.getArticlesEnabled(),
       ]);
       setArticles(list);
-      setEnabled(true);
+      setEnabled(settings.enabled);
     } catch (err: any) {
       setError(err.message || "Failed to load articles");
       if (err.message?.includes("401") || err.message?.includes("Unauthorized")) {

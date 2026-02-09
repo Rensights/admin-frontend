@@ -419,9 +419,7 @@ class AdminApiClient {
   }
 
   async getArticlesEnabled(): Promise<{ enabled: boolean }> {
-    return this.request<{ enabled: boolean }>(`/api/admin/articles/enable?enabled=true`, {
-      method: "PUT",
-    });
+    return this.request<{ enabled: boolean }>(`/api/admin/articles/enable`);
   }
 }
 
