@@ -387,6 +387,75 @@ class AdminApiClient {
     }
     return response.json();
   }
+
+  async getArticles(): Promise<Article[]> {
+    const url = `${MAIN_BACKEND_URL}/api/admin/articles`;
+    const response = await fetch(url, {
+      headers: this.getAuthHeaders() || undefined,
+    });
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async createArticle(payload: Partial<Article>): Promise<Article> {
+    const url = `${MAIN_BACKEND_URL}/api/admin/articles`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(this.getAuthHeaders() || {}) },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async updateArticle(id: string, payload: Partial<Article>): Promise<Article> {
+    const url = `${MAIN_BACKEND_URL}/api/admin/articles/${id}`;
+    const response = await fetch(url, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...(this.getAuthHeaders() || {}) },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async deleteArticle(id: string): Promise<void> {
+    const url = `${MAIN_BACKEND_URL}/api/admin/articles/${id}`;
+    const response = await fetch(url, {
+      method: "DELETE",
+      headers: this.getAuthHeaders() || undefined,
+    });
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+  }
+
+  async setArticlesEnabled(enabled: boolean): Promise<{ enabled: boolean }> {
+    const url = `${MAIN_BACKEND_URL}/api/admin/articles/settings?enabled=${enabled}`;
+    const response = await fetch(url, {
+      method: "PUT",
+      headers: this.getAuthHeaders() || undefined,
+    });
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+    return response.json();
+  }
+
+  async getArticlesEnabled(): Promise<{ enabled: boolean }> {
+    const url = `${MAIN_BACKEND_URL}/api/articles/settings`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+    return response.json();
+  }
 }
 
 export interface AdminAuthResponse {
@@ -487,6 +556,17 @@ export interface EarlyAccessRequest {
   challenges?: string;
   valuableServices?: string;
   createdAt: string;
+}
+
+export interface Article {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt?: string;
+  content?: string;
+  coverImage?: string;
+  publishedAt?: string;
+  isActive: boolean;
 }
 
 export interface PaginatedResponse<T> {
