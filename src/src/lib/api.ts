@@ -407,12 +407,15 @@ export interface DashboardStats {
   freeUsers: number;
   premiumUsers: number;
   enterpriseUsers: number;
+  activeUsers?: number;
+  verifiedUsers?: number;
   pendingAnalysisRequests?: number;
   monthlyIncome?: { month: string; income: number }[];
   dailyIncome?: { date: string; income: number }[];
   deviceTypeStats?: { type: string; count: number }[];
   monthlyUserRegistrations?: { month: string; free: number; premium: number; enterprise: number }[];
   dailyUserRegistrations?: { date: string; free: number; premium: number; enterprise: number }[];
+  subscriptionStatusStats?: { status: string; count: number }[];
 }
 
 export interface AnalysisRequest {

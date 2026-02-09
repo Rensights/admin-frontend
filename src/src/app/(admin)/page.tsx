@@ -8,7 +8,8 @@ import TotalIncomeCard from "@/components/ecommerce/TotalIncomeCard";
 import DeviceTypeChart from "@/components/ecommerce/DeviceTypeChart";
 import UserRegistrationsChart from "@/components/ecommerce/UserRegistrationsChart";
 import UserTypeTotalsCard from "@/components/ecommerce/UserTypeTotalsCard";
-import DemographicCard from "@/components/ecommerce/DemographicCard";
+import SubscriptionStatusChart from "@/components/ecommerce/SubscriptionStatusChart";
+import DashboardKpis from "@/components/ecommerce/DashboardKpis";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -110,6 +111,14 @@ export default function Dashboard() {
         </div>
       </div>
 
+      <DashboardKpis
+        totalUsers={stats?.totalUsers || 0}
+        activeUsers={stats?.activeUsers || 0}
+        verifiedUsers={stats?.verifiedUsers || 0}
+        activeSubscriptions={stats?.activeSubscriptions || 0}
+        pendingAnalysisRequests={stats?.pendingAnalysisRequests || 0}
+      />
+
       <div className="grid grid-cols-12 gap-4 md:gap-6">
         {/* Income Chart and Total Income Card */}
         <div className="col-span-12 space-y-6 xl:col-span-7">
@@ -147,7 +156,7 @@ export default function Dashboard() {
       </div>
 
       <div className="col-span-12 xl:col-span-7">
-        <DemographicCard />
+        <SubscriptionStatusChart subscriptionStatusStats={stats?.subscriptionStatusStats} />
       </div>
       </div>
     </div>
