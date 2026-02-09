@@ -255,6 +255,17 @@ class AdminApiClient {
     });
   }
 
+  async seedTranslations(
+    sourceLanguageCode: string,
+    targetLanguageCode: string,
+    overwrite: boolean = false
+  ): Promise<Translation[]> {
+    return this.request<Translation[]>('/api/admin/translations/seed', {
+      method: 'POST',
+      body: JSON.stringify({ sourceLanguageCode, targetLanguageCode, overwrite }),
+    });
+  }
+
   async getAvailableLanguages(): Promise<string[]> {
     return this.request<string[]>('/api/admin/translations/languages');
   }

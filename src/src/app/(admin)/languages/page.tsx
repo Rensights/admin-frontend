@@ -181,23 +181,8 @@ export default function LanguagesPage() {
     setSeedStatus("Seeding translations from default language...");
 
     try {
-      const sourceTranslations = await adminApiClient.getTranslationsByLanguage(sourceLanguage);
-      let seededCount = 0;
-      for (const translation of sourceTranslations) {
-        try {
-          await adminApiClient.createTranslation({
-            languageCode: newLanguageCode,
-            namespace: translation.namespace,
-            translationKey: translation.translationKey,
-            translationValue: translation.translationValue,
-            description: translation.description || "",
-          });
-          seededCount += 1;
-        } catch (err) {
-          // Ignore duplicates or individual failures to continue seeding.
-        }
-      }
-      setSeedStatus(`Seeded ${seededCount} translations from ${sourceLanguage.toUpperCase()}.`);
+      const seeded = await adminApiClient.seedTranslations(sourceLanguage, newLanguageCode, false);
+      setSeedStatus(`Seeded ${seeded.length} translations from ${sourceLanguage.toUpperCase()}.`);
     } catch (err: any) {
       setError(err.message || "Failed to seed translations for the new language");
     } finally {
@@ -433,5 +418,4 @@ export default function LanguagesPage() {
     </div>
   );
 }
-
 
