@@ -32,6 +32,7 @@ const navItems: NavItem[] = [
     subItems: [
       { name: "User List", path: "/users/list", pro: false },
       { name: "Subscriptions", path: "/users/subscriptions", pro: false },
+      { name: "Early Access", path: "/early-access", pro: false },
     ],
   },
   {

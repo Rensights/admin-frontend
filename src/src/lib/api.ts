@@ -378,6 +378,15 @@ class AdminApiClient {
       method: 'DELETE',
     });
   }
+
+  async getEarlyAccessRequests(page: number = 0, size: number = 50): Promise<PaginatedResponse<EarlyAccessRequest>> {
+    const url = `${MAIN_BACKEND_URL}/api/early-access?page=${page}&size=${size}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Request failed with status ${response.status}`);
+    }
+    return response.json();
+  }
 }
 
 export interface AdminAuthResponse {
@@ -460,6 +469,24 @@ export interface AnalysisRequest {
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
   updatedAt: string;
+}
+
+export interface EarlyAccessRequest {
+  id: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  location: string;
+  experience?: string;
+  budget?: string;
+  portfolio?: string;
+  timeline?: string;
+  goals?: string[];
+  propertyTypes?: string[];
+  targetRegions?: string;
+  challenges?: string;
+  valuableServices?: string;
+  createdAt: string;
 }
 
 export interface PaginatedResponse<T> {
