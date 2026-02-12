@@ -15,8 +15,6 @@ export default function Dashboard() {
   const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-  const [syncMessage, setSyncMessage] = useState<string | null>(null);
 
   const loadStats = useCallback(async () => {
     setLoading(true);
@@ -33,23 +31,6 @@ export default function Dashboard() {
       setLoading(false);
     }
   }, [router]);
-
-  const handleSyncAllInvoices = useCallback(async () => {
-    setSyncing(true);
-    setSyncMessage(null);
-    try {
-      const result = await adminApiClient.syncAllUsersInvoices();
-      setSyncMessage(`Successfully synced invoices for ${result.syncedCount} users`);
-      // Reload stats after sync
-      await loadStats();
-      setTimeout(() => setSyncMessage(null), 5000);
-    } catch (error: any) {
-      setSyncMessage(`Error: ${error.message || "Failed to sync invoices"}`);
-      setTimeout(() => setSyncMessage(null), 5000);
-    } finally {
-      setSyncing(false);
-    }
-  }, [loadStats]);
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -73,44 +54,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      {/* Sync All Users Invoices Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 md:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-              Invoice Sync
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              Sync invoices for all users from Stripe
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            {syncMessage && (
-              <span className={`text-sm ${syncMessage.includes('Error') ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                {syncMessage}
-              </span>
-            )}
-            <button
-              onClick={handleSyncAllInvoices}
-              disabled={syncing}
-              className="px-4 py-2 bg-brand-500 hover:bg-brand-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {syncing ? (
-                <>
-                  <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Syncing...
-                </>
-              ) : (
-                <>
-                  <span>🔄</span>
-                  Sync All Users
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
       <DashboardKpis
         totalUsers={stats?.totalUsers || 0}
         activeUsers={stats?.activeUsers || 0}
