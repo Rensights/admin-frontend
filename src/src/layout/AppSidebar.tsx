@@ -53,6 +53,11 @@ const navItems: NavItem[] = [
     name: "Articles",
     path: "/articles",
   },
+  {
+    icon: <DocsIcon />,
+    name: "Settings",
+    path: "/settings",
+  },
 ];
 
 const AppSidebar: React.FC = () => {
