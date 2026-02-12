@@ -204,6 +204,16 @@ class AdminApiClient {
     return this.request<PaginatedResponse<Deal>>(`/api/admin/deals/approved?${params.toString()}`);
   }
 
+  async setWeeklyDealsEnabled(enabled: boolean): Promise<{ enabled: boolean }> {
+    return this.request<{ enabled: boolean }>(`/api/admin/weekly-deals/enable?enabled=${enabled}`, {
+      method: "PUT",
+    });
+  }
+
+  async getWeeklyDealsEnabled(): Promise<{ enabled: boolean }> {
+    return this.request<{ enabled: boolean }>(`/api/admin/weekly-deals/enable`);
+  }
+
   async deleteDeal(dealId: string): Promise<void> {
     return this.request<void>(`/api/admin/deals/${dealId}`, {
       method: 'DELETE',

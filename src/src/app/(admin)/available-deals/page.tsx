@@ -14,14 +14,19 @@ export default function AvailableDealsPage() {
   const [error, setError] = useState<string | null>(null);
   const [archiving, setArchiving] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [weeklyDealsEnabled, setWeeklyDealsEnabled] = useState(true);
 
   const loadDeals = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await adminApiClient.getApprovedDeals(currentPage, 20);
+      const [response, settings] = await Promise.all([
+        adminApiClient.getApprovedDeals(currentPage, 20),
+        adminApiClient.getWeeklyDealsEnabled(),
+      ]);
       setDeals(response.content);
       setTotalPages(response.totalPages);
+      setWeeklyDealsEnabled(settings.enabled);
     } catch (error: any) {
       console.error("Error loading deals:", error);
       setError(error.message || "Failed to load deals");
@@ -38,6 +43,17 @@ export default function AvailableDealsPage() {
     }
     loadDeals();
   }, [router, currentPage, loadDeals]);
+
+  const handleToggleWeeklyDeals = async () => {
+    try {
+      const next = !weeklyDealsEnabled;
+      await adminApiClient.setWeeklyDealsEnabled(next);
+      setWeeklyDealsEnabled(next);
+    } catch (error: any) {
+      console.error("Error updating weekly deals setting:", error);
+      setError(error.message || "Failed to update weekly deals setting");
+    }
+  };
 
   const handleArchive = async (dealId: string) => {
     if (!confirm("Are you sure you want to archive this deal? It will be moved to rejected/archived deals.")) {
@@ -74,9 +90,18 @@ export default function AvailableDealsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Available Deals</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Approved deals visible to users</p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Available Deals</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">Approved deals visible to users</p>
+        </div>
+        <button
+          onClick={handleToggleWeeklyDeals}
+          className="px-4 py-2 rounded-lg text-white transition-colors"
+          style={{ background: weeklyDealsEnabled ? "#16a34a" : "#ef4444" }}
+        >
+          {weeklyDealsEnabled ? "Weekly Deals Enabled" : "Weekly Deals Disabled"}
+        </button>
       </div>
 
       {actionMessage && (
