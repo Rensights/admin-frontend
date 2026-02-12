@@ -13,6 +13,8 @@ export default function AnalysisRequestDetailPage() {
   const [request, setRequest] = useState<AnalysisRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const loadRequest = useCallback(async () => {
     if (!requestId) return;
@@ -32,6 +34,34 @@ export default function AnalysisRequestDetailPage() {
       setLoading(false);
     }
   }, [requestId, router]);
+
+  const handleRefreshResult = async () => {
+    if (!requestId) return;
+    setSyncing(true);
+    setError(null);
+    try {
+      const updated = await adminApiClient.refreshAnalysisResult(requestId);
+      setRequest(updated);
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch analysis result");
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!requestId) return;
+    setUpdatingStatus(true);
+    setError(null);
+    try {
+      const updated = await adminApiClient.updateAnalysisRequestStatus(requestId, "COMPLETED");
+      setRequest(updated);
+    } catch (err: any) {
+      setError(err.message || "Failed to approve analysis request");
+    } finally {
+      setUpdatingStatus(false);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -87,6 +117,58 @@ export default function AnalysisRequestDetailPage() {
       )}
 
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-6">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white/90">Analysis Result</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Fetch the latest result from the external analysis service, then approve to publish to the user.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={handleRefreshResult}
+              disabled={syncing || !request.analysisId}
+              className="px-4 py-2 rounded-lg text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-60"
+            >
+              {syncing ? "Fetching..." : "Fetch Result"}
+            </button>
+            <button
+              type="button"
+              onClick={handleApprove}
+              disabled={updatingStatus || request.status === "COMPLETED" || !request.analysisResult}
+              className="px-4 py-2 rounded-lg text-white bg-success-500 hover:bg-success-600 disabled:opacity-60"
+            >
+              {updatingStatus ? "Approving..." : "Approve Result"}
+            </button>
+          </div>
+        </div>
+
+        <div className="mb-8 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+          <div className="flex flex-wrap gap-6">
+            <div>
+              <div className="text-xs uppercase text-gray-400">Analysis ID</div>
+              <div className="mt-1 font-medium">{request.analysisId || "Not available yet"}</div>
+            </div>
+            <div>
+              <div className="text-xs uppercase text-gray-400">Result Status</div>
+              <div className="mt-1 font-medium">{request.analysisResult ? "Fetched" : "Not fetched"}</div>
+            </div>
+          </div>
+        </div>
+
+        {request.analysisResult ? (
+          <pre className="whitespace-pre-wrap break-words rounded-lg bg-white p-4 text-xs text-gray-800 shadow-sm dark:bg-gray-800 dark:text-gray-200">
+            {JSON.stringify(request.analysisResult, null, 2)}
+          </pre>
+        ) : (
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            No analysis result fetched yet.
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-6 mt-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Email</label>
@@ -313,7 +395,6 @@ export default function AnalysisRequestDetailPage() {
     </div>
   );
 }
-
 
 
 

@@ -145,6 +145,12 @@ class AdminApiClient {
     });
   }
 
+  async refreshAnalysisResult(requestId: string): Promise<AnalysisRequest> {
+    return this.request<AnalysisRequest>(`/api/admin/analysis-requests/${requestId}/analysis-result`, {
+      method: 'POST',
+    });
+  }
+
   // Deal management endpoints
   async getPendingDeals(page: number = 0, size: number = 20, city?: string): Promise<PaginatedResponse<Deal>> {
     const cityParam = city ? `&city=${encodeURIComponent(city)}` : '';
@@ -535,6 +541,8 @@ export interface AnalysisRequest {
   furnishing?: string;
   additionalNotes?: string;
   filePaths?: string[];
+  analysisId?: string;
+  analysisResult?: any;
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
   updatedAt: string;
