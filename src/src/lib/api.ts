@@ -30,6 +30,13 @@ class AdminApiClient {
       headers,
     });
 
+    if (response.status === 401 || response.status === 403) {
+      this.clearToken();
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
       let error;

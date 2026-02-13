@@ -4,7 +4,9 @@ import { useSidebar } from "@/context/SidebarContext";
 import AppHeader from "@/layout/AppHeader";
 import AppSidebar from "@/layout/AppSidebar";
 import Backdrop from "@/layout/Backdrop";
-import React from "react";
+import { adminApiClient } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 
 export default function AdminLayout({
   children,
@@ -12,6 +14,20 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { isExpanded, isHovered, isMobileOpen } = useSidebar();
+  const router = useRouter();
+  const [isAuthChecked, setIsAuthChecked] = useState(false);
+
+  useEffect(() => {
+    if (!adminApiClient.getAuthHeaders()) {
+      router.replace("/login");
+      return;
+    }
+    setIsAuthChecked(true);
+  }, [router]);
+
+  if (!isAuthChecked) {
+    return null;
+  }
 
   // Dynamic class for main content margin based on sidebar state
   const mainContentMargin = isMobileOpen
