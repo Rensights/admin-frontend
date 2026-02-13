@@ -30,6 +30,7 @@ export default function LandingPageManagement() {
   const [success, setSuccess] = useState<string | null>(null);
   const [editingItem, setEditingItem] = useState<LandingPageContent | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [solutionVideos, setSolutionVideos] = useState<string[]>(["", "", "", ""]);
   const [formData, setFormData] = useState<LandingPageContentRequest>({
     section: "hero",
     languageCode: "en",
@@ -70,7 +71,17 @@ export default function LandingPageManagement() {
         adminApiClient.getLandingPageContentBySection(selectedSection),
         adminApiClient.getLandingPageSection(selectedSection, selectedLanguage),
       ]);
-      setContent(contentList.filter(c => c.languageCode === selectedLanguage));
+      const filtered = contentList.filter(c => c.languageCode === selectedLanguage);
+      setContent(filtered);
+      if (selectedSection === "solutions") {
+        const byKey = new Map(filtered.map(item => [item.fieldKey, item]));
+        setSolutionVideos([
+          byKey.get("video1")?.contentValue || "",
+          byKey.get("video2")?.contentValue || "",
+          byKey.get("video3")?.contentValue || "",
+          byKey.get("video4")?.contentValue || "",
+        ]);
+      }
       setSectionData(section);
     } catch (error: any) {
       setError("Failed to load content");
@@ -144,6 +155,40 @@ export default function LandingPageManagement() {
     resetForm();
     setEditingItem(null);
     setShowAddForm(true);
+  };
+
+  const handleSaveSolutionVideos = async () => {
+    setError(null);
+    setSuccess(null);
+    try {
+      const existingByKey = new Map(content.map(item => [item.fieldKey, item]));
+      const updates = solutionVideos.map((value, idx) => {
+        const fieldKey = `video${idx + 1}`;
+        const trimmed = value.trim();
+        const existing = existingByKey.get(fieldKey);
+        if (!trimmed) {
+          if (existing) {
+            return adminApiClient.deleteLandingPageContent(existing.id);
+          }
+          return Promise.resolve();
+        }
+        return adminApiClient.createOrUpdateLandingPageContent({
+          section: selectedSection,
+          languageCode: selectedLanguage,
+          fieldKey,
+          contentType: "video",
+          contentValue: trimmed,
+          displayOrder: idx,
+          isActive: true,
+        });
+      });
+      await Promise.all(updates);
+      setSuccess("Solutions videos updated successfully");
+      loadSectionContent();
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (error: any) {
+      setError(error.message || "Failed to update solutions videos");
+    }
   };
 
   return (
@@ -302,6 +347,43 @@ export default function LandingPageManagement() {
         </div>
       )}
 
+      {selectedSection === "solutions" && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold">Solutions Videos</h2>
+              <p className="text-sm text-gray-500">Update the 4 YouTube links used on the Solutions page.</p>
+            </div>
+            <button
+              onClick={handleSaveSolutionVideos}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Save Videos
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {solutionVideos.map((value, idx) => (
+              <div key={idx}>
+                <label className="block text-sm font-medium mb-2">
+                  Video {idx + 1} URL or ID
+                </label>
+                <input
+                  type="text"
+                  value={value}
+                  onChange={(e) => {
+                    const next = [...solutionVideos];
+                    next[idx] = e.target.value;
+                    setSolutionVideos(next);
+                  }}
+                  className="w-full px-3 py-2 border rounded-lg"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Content List */}
       <div className="bg-white rounded-lg shadow">
         <div className="p-4 border-b flex justify-between items-center">
@@ -402,4 +484,3 @@ export default function LandingPageManagement() {
     </div>
   );
 }
-
