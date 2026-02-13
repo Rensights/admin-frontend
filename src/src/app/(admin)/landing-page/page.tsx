@@ -26,6 +26,7 @@ export default function LandingPageManagement() {
   const [selectedSection, setSelectedSection] = useState<string>("hero");
   const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
   const [content, setContent] = useState<LandingPageContent[]>([]);
+  const [allContent, setAllContent] = useState<LandingPageContent[]>([]);
   const [sectionData, setSectionData] = useState<LandingPageSection | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,10 +78,11 @@ export default function LandingPageManagement() {
         adminApiClient.getLandingPageContentBySection(selectedSection),
         adminApiClient.getLandingPageSection(selectedSection, selectedLanguage),
       ]);
+      setAllContent(contentList);
       const filtered = contentList.filter(c => c.languageCode === selectedLanguage);
       setContent(filtered);
       if (selectedSection === "solutions") {
-        const byKey = new Map(filtered.map(item => [item.fieldKey, item]));
+        const byKey = new Map(contentList.map(item => [item.fieldKey, item]));
         setSolutionVideos([
           byKey.get("video1")?.contentValue || "",
           byKey.get("video2")?.contentValue || "",
@@ -167,25 +169,32 @@ export default function LandingPageManagement() {
     setError(null);
     setSuccess(null);
     try {
-      const existingByKey = new Map(content.map(item => [item.fieldKey, item]));
-      const updates = solutionVideos.map((value, idx) => {
+      const languagesToUpdate = languages.length > 0 ? languages.map(l => l.code) : [selectedLanguage];
+      const updates: Promise<any>[] = [];
+      solutionVideos.forEach((value, idx) => {
         const fieldKey = `video${idx + 1}`;
         const trimmed = value.trim();
-        const existing = existingByKey.get(fieldKey);
-        if (!trimmed) {
-          if (existing) {
-            return adminApiClient.deleteLandingPageContent(existing.id);
+        languagesToUpdate.forEach((lang) => {
+          const existing = allContent.find(
+            (item) => item.languageCode === lang && item.fieldKey === fieldKey
+          );
+          if (!trimmed) {
+            if (existing) {
+              updates.push(adminApiClient.deleteLandingPageContent(existing.id));
+            }
+            return;
           }
-          return Promise.resolve();
-        }
-        return adminApiClient.createOrUpdateLandingPageContent({
-          section: selectedSection,
-          languageCode: selectedLanguage,
-          fieldKey,
-          contentType: "video",
-          contentValue: trimmed,
-          displayOrder: idx,
-          isActive: true,
+          updates.push(
+            adminApiClient.createOrUpdateLandingPageContent({
+              section: selectedSection,
+              languageCode: lang,
+              fieldKey,
+              contentType: "video",
+              contentValue: trimmed,
+              displayOrder: idx,
+              isActive: true,
+            })
+          );
         });
       });
       await Promise.all(updates);
@@ -253,7 +262,7 @@ export default function LandingPageManagement() {
       </div>
 
       {/* Add/Edit Form */}
-      {showAddForm && (
+      {showAddForm && selectedSection !== "solutions" && (
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">
             {editingItem ? "Edit Content" : "Add New Content"}
@@ -358,7 +367,7 @@ export default function LandingPageManagement() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-xl font-semibold">Solutions Videos</h2>
-              <p className="text-sm text-gray-500">Update the 4 YouTube links used on the Solutions page.</p>
+              <p className="text-sm text-gray-500">Update the 4 YouTube links used on the Solutions page. These apply to all languages.</p>
             </div>
             <button
               onClick={handleSaveSolutionVideos}
@@ -391,95 +400,97 @@ export default function LandingPageManagement() {
       )}
 
       {/* Content List */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-4 border-b flex justify-between items-center">
-          <h2 className="text-xl font-semibold">
-            {SECTIONS.find(s => s.value === selectedSection)?.label} - {languages.find(l => l.code === selectedLanguage)?.nativeName || selectedLanguage}
-          </h2>
-          <button
-            onClick={handleAddNew}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            + Add Content
-          </button>
-        </div>
-        {loading ? (
-          <div className="p-8 text-center text-gray-500">Loading...</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Field Key</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Type</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Value Preview</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Order</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {content.length === 0 ? (
+      {selectedSection !== "solutions" && (
+        <div className="bg-white rounded-lg shadow">
+          <div className="p-4 border-b flex justify-between items-center">
+            <h2 className="text-xl font-semibold">
+              {SECTIONS.find(s => s.value === selectedSection)?.label} - {languages.find(l => l.code === selectedLanguage)?.nativeName || selectedLanguage}
+            </h2>
+            <button
+              onClick={handleAddNew}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              + Add Content
+            </button>
+          </div>
+          {loading ? (
+            <div className="p-8 text-center text-gray-500">Loading...</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                      No content found. Click "Add Content" to create new content.
-                    </td>
+                    <th className="px-4 py-3 text-left text-sm font-medium">Field Key</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium">Type</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium">Value Preview</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium">Order</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium">Actions</th>
                   </tr>
-                ) : (
-                  content.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium">{item.fieldKey}</td>
-                      <td className="px-4 py-3 text-sm">
-                        <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                          {item.contentType}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        <div className="max-w-md truncate">
-                          {item.contentType === "image" ? (
-                            <img src={item.contentValue} alt={item.fieldKey} className="h-12 w-12 object-cover rounded" />
-                          ) : item.contentType === "video" ? (
-                            <a href={item.contentValue} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                              {item.contentValue.substring(0, 50)}...
-                            </a>
-                          ) : (
-                            item.contentValue.substring(0, 100) + (item.contentValue.length > 100 ? "..." : "")
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm">{item.displayOrder || 0}</td>
-                      <td className="px-4 py-3 text-sm">
-                        <span className={`px-2 py-1 rounded text-xs ${item.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-                          {item.isActive ? "Active" : "Inactive"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm">
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => handleEdit(item)}
-                            className="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(item.id)}
-                            className="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
-                          >
-                            Delete
-                          </button>
-                        </div>
+                </thead>
+                <tbody className="divide-y">
+                  {content.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                        No content found. Click "Add Content" to create new content.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                  ) : (
+                    content.map((item) => (
+                      <tr key={item.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm font-medium">{item.fieldKey}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                            {item.contentType}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <div className="max-w-md truncate">
+                            {item.contentType === "image" ? (
+                              <img src={item.contentValue} alt={item.fieldKey} className="h-12 w-12 object-cover rounded" />
+                            ) : item.contentType === "video" ? (
+                              <a href={item.contentValue} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                                {item.contentValue.substring(0, 50)}...
+                              </a>
+                            ) : (
+                              item.contentValue.substring(0, 100) + (item.contentValue.length > 100 ? "..." : "")
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-sm">{item.displayOrder || 0}</td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`px-2 py-1 rounded text-xs ${item.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                            {item.isActive ? "Active" : "Inactive"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEdit(item)}
+                              className="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(item.id)}
+                              className="px-3 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Preview Section */}
-      {sectionData && (
+      {sectionData && selectedSection !== "solutions" && (
         <div className="mt-6 bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">Preview (Current Language)</h2>
           <pre className="bg-gray-50 p-4 rounded-lg overflow-auto text-sm">
