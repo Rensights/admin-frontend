@@ -484,6 +484,11 @@ export interface User {
   email: string;
   firstName?: string;
   lastName?: string;
+  phone?: string;
+  budget?: string;
+  portfolio?: string;
+  goals?: string[];
+  registrationPlan?: string;
   userTier: 'FREE' | 'PREMIUM' | 'ENTERPRISE';
   customerId?: string;
   createdAt?: string;

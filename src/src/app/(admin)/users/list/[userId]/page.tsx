@@ -217,6 +217,33 @@ export default function UserDetailPage() {
           </div>
 
           <div>
+            <Label>Phone</Label>
+            <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{user.phone || 'N/A'}</p>
+          </div>
+
+          <div>
+            <Label>Budget</Label>
+            <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{user.budget || 'N/A'}</p>
+          </div>
+
+          <div>
+            <Label>Portfolio</Label>
+            <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{user.portfolio || 'N/A'}</p>
+          </div>
+
+          <div>
+            <Label>Goals</Label>
+            <p className="mt-1 text-sm text-gray-900 dark:text-white/90">
+              {user.goals && user.goals.length > 0 ? user.goals.join(", ") : 'N/A'}
+            </p>
+          </div>
+
+          <div>
+            <Label>Registration Plan</Label>
+            <p className="mt-1 text-sm text-gray-900 dark:text-white/90">{user.registrationPlan || 'N/A'}</p>
+          </div>
+
+          <div>
             <Label>User Tier</Label>
             {isEditing ? (
               <select
@@ -305,7 +332,6 @@ export default function UserDetailPage() {
     </div>
   );
 }
-
 
 
 
