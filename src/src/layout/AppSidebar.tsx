@@ -55,6 +55,13 @@ const navItems: NavItem[] = [
   },
   {
     icon: <DocsIcon />,
+    name: "Solutions",
+    subItems: [
+      { name: "Video Management", path: "/landing-page?section=solutions", pro: false },
+    ],
+  },
+  {
+    icon: <DocsIcon />,
     name: "Settings",
     path: "/settings",
   },

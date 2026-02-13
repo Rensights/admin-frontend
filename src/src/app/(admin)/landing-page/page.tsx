@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { adminApiClient, LandingPageContent, LandingPageContentRequest, LandingPageSection, Language } from "@/lib/api";
 
 const SECTIONS = [
@@ -20,6 +21,7 @@ const CONTENT_TYPES = [
 ];
 
 export default function LandingPageManagement() {
+  const searchParams = useSearchParams();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [selectedSection, setSelectedSection] = useState<string>("hero");
   const [selectedLanguage, setSelectedLanguage] = useState<string>("en");
@@ -42,8 +44,12 @@ export default function LandingPageManagement() {
   });
 
   useEffect(() => {
+    const sectionFromQuery = searchParams?.get("section");
+    if (sectionFromQuery) {
+      setSelectedSection(sectionFromQuery);
+    }
     loadLanguages();
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     if (selectedSection && selectedLanguage) {
