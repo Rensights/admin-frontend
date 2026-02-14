@@ -128,7 +128,7 @@ export default function AnalysisRequestDetailPage() {
             <button
               type="button"
               onClick={handleRefreshResult}
-              disabled={syncing || !request.analysisId}
+              disabled={syncing}
               className="px-4 py-2 rounded-lg text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-60"
             >
               {syncing ? "Fetching..." : "Fetch Result"}
@@ -395,7 +395,6 @@ export default function AnalysisRequestDetailPage() {
     </div>
   );
 }
-
 
 
 
