@@ -44,7 +44,6 @@ export default function CityReportsAdminPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [isSectionFormOpen, setIsSectionFormOpen] = useState(false);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [sectionForm, setSectionForm] = useState<ReportSectionRequest>(emptySection);
 
@@ -99,7 +98,6 @@ export default function CityReportsAdminPage() {
   const resetSectionForm = () => {
     setSectionForm({ ...emptySection, languageCode: language });
     setEditingSectionId(null);
-    setIsSectionFormOpen(false);
   };
 
   const resetDocumentForm = () => {
@@ -112,15 +110,15 @@ export default function CityReportsAdminPage() {
   const handleSectionSave = async () => {
     setError(null);
     try {
-      if (!sectionForm.sectionKey || !sectionForm.title || !sectionForm.navTitle) {
-        setError("Section key, title, and nav title are required");
+      if (!sectionForm.title || !sectionForm.navTitle) {
+        setError("Title and nav title are required");
         return;
       }
-      if (editingSectionId) {
-        await adminApiClient.updateReportSection(editingSectionId, sectionForm);
-      } else {
-        await adminApiClient.createReportSection(sectionForm);
+      if (!editingSectionId) {
+        setError("Select a section to edit");
+        return;
       }
+      await adminApiClient.updateReportSection(editingSectionId, sectionForm);
       await loadSections();
       resetSectionForm();
     } catch (err: any) {
@@ -130,7 +128,6 @@ export default function CityReportsAdminPage() {
 
   const handleEditSection = (section: ReportSection) => {
     setEditingSectionId(section.id);
-    setIsSectionFormOpen(true);
     setSectionForm({
       sectionKey: section.sectionKey,
       title: section.title,
@@ -143,21 +140,10 @@ export default function CityReportsAdminPage() {
     });
   };
 
-  const handleDeleteSection = async (sectionId: string) => {
-    if (!confirm("Delete this section and all documents?")) return;
-    setError(null);
-    try {
-      await adminApiClient.deleteReportSection(sectionId);
-      await loadSections();
-    } catch (err: any) {
-      setError(err.message || "Failed to delete section");
-    }
-  };
-
   const handleOpenUpload = (sectionId: string) => {
     setUploadSectionId(sectionId);
     setEditingDocumentId(null);
-    setDocumentForm({ ...emptyDocument, languageCode: language });
+    setDocumentForm({ ...emptyDocument, languageCode: "en" });
     setDocumentFile(null);
   };
 
@@ -168,7 +154,7 @@ export default function CityReportsAdminPage() {
       title: doc.title,
       description: doc.description || "",
       displayOrder: doc.displayOrder,
-      languageCode: doc.languageCode || language,
+      languageCode: "en",
       isActive: doc.isActive ?? true,
     });
     setDocumentFile(null);
@@ -246,16 +232,6 @@ export default function CityReportsAdminPage() {
               </option>
             ))}
           </select>
-          <button
-            onClick={() => {
-              setIsSectionFormOpen(true);
-              setEditingSectionId(null);
-              setSectionForm({ ...emptySection, languageCode: language });
-            }}
-            className="px-4 py-2 rounded-lg bg-brand-500 text-white"
-          >
-            New Section
-          </button>
         </div>
       </div>
 
@@ -265,10 +241,10 @@ export default function CityReportsAdminPage() {
         </div>
       )}
 
-      {isSectionFormOpen && (
+      {editingSectionId && (
         <div className="mb-6 p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
-            {editingSectionId ? "Edit Section" : "Create Section"}
+            Edit Section
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -278,6 +254,7 @@ export default function CityReportsAdminPage() {
               <input
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 value={sectionForm.sectionKey}
+                disabled
                 onChange={(e) => setSectionForm({ ...sectionForm, sectionKey: e.target.value })}
               />
             </div>
@@ -308,6 +285,7 @@ export default function CityReportsAdminPage() {
               <select
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 value={sectionForm.accessTier}
+                disabled
                 onChange={(e) =>
                   setSectionForm({
                     ...sectionForm,
@@ -328,6 +306,7 @@ export default function CityReportsAdminPage() {
                 type="number"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 value={sectionForm.displayOrder}
+                disabled
                 onChange={(e) =>
                   setSectionForm({ ...sectionForm, displayOrder: Number(e.target.value) })
                 }
@@ -371,7 +350,7 @@ export default function CityReportsAdminPage() {
           </div>
           <div className="mt-4 flex gap-3">
             <button onClick={handleSectionSave} className="px-4 py-2 bg-brand-500 text-white rounded-lg">
-              {editingSectionId ? "Update Section" : "Create Section"}
+              Update Section
             </button>
             <button onClick={resetSectionForm} className="px-4 py-2 border border-gray-300 rounded-lg dark:border-gray-600">
               Cancel
@@ -407,12 +386,6 @@ export default function CityReportsAdminPage() {
                     onClick={() => handleEditSection(section)}
                   >
                     Edit
-                  </button>
-                  <button
-                    className="px-3 py-2 text-sm rounded-lg border border-red-500 text-red-600"
-                    onClick={() => handleDeleteSection(section.id)}
-                  >
-                    Delete
                   </button>
                 </div>
               </div>
@@ -465,19 +438,11 @@ export default function CityReportsAdminPage() {
                         <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                           Language
                         </label>
-                        <select
+                        <input
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                          value={documentForm.languageCode}
-                          onChange={(e) =>
-                            setDocumentForm({ ...documentForm, languageCode: e.target.value })
-                          }
-                        >
-                          {languages.map((lang) => (
-                            <option key={lang} value={lang}>
-                              {lang.toUpperCase()}
-                            </option>
-                          ))}
-                        </select>
+                          value="EN"
+                          disabled
+                        />
                       </div>
                       <div className="flex items-center gap-2 mt-6">
                         <input
