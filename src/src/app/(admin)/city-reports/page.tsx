@@ -54,12 +54,14 @@ export default function CityReportsAdminPage() {
 
   const loadLanguages = useCallback(async () => {
     try {
-      const available = await adminApiClient.getAvailableLanguages();
-      if (available.length > 0) {
-        setLanguages(available);
-        if (!available.includes(language)) {
-          setLanguage(available[0]);
-        }
+      const available = await adminApiClient.getAllLanguages();
+      const enabledCodes = available
+        .filter((item) => item.enabled)
+        .map((item) => item.code);
+      const nextCodes = enabledCodes.length > 0 ? enabledCodes : ["en"];
+      setLanguages(nextCodes);
+      if (!nextCodes.includes(language)) {
+        setLanguage(nextCodes[0]);
       }
     } catch {
       setLanguages(["en"]);
