@@ -17,9 +17,12 @@ class AdminApiClient {
   ): Promise<T> {
     const url = `${API_URL}${endpoint}`;
     const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
       ...(options.headers as Record<string, string>),
     };
+
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
@@ -61,6 +64,10 @@ class AdminApiClient {
 
   getBaseUrl() {
     return API_URL;
+  }
+
+  getMainBackendUrl() {
+    return MAIN_BACKEND_URL;
   }
 
   getAuthHeaders() {
@@ -463,6 +470,65 @@ class AdminApiClient {
     return this.normalizeArticle(updated);
   }
 
+  // City report management endpoints
+  async getReportSections(languageCode: string = "en"): Promise<ReportSection[]> {
+    return this.request<ReportSection[]>(`/api/admin/reports/sections?lang=${encodeURIComponent(languageCode)}`);
+  }
+
+  async getReportSection(sectionId: string): Promise<ReportSection> {
+    return this.request<ReportSection>(`/api/admin/reports/sections/${sectionId}`);
+  }
+
+  async createReportSection(request: ReportSectionRequest): Promise<ReportSection> {
+    return this.request<ReportSection>(`/api/admin/reports/sections`, {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+  }
+
+  async updateReportSection(sectionId: string, request: ReportSectionRequest): Promise<ReportSection> {
+    return this.request<ReportSection>(`/api/admin/reports/sections/${sectionId}`, {
+      method: "PUT",
+      body: JSON.stringify(request),
+    });
+  }
+
+  async deleteReportSection(sectionId: string): Promise<void> {
+    await this.request<void>(`/api/admin/reports/sections/${sectionId}`, {
+      method: "DELETE",
+    });
+  }
+
+  async uploadReportDocument(
+    sectionId: string,
+    request: ReportDocumentRequest,
+    file: File
+  ): Promise<ReportDocument> {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append(
+      "metadata",
+      new Blob([JSON.stringify(request)], { type: "application/json" })
+    );
+    return this.request<ReportDocument>(`/api/admin/reports/sections/${sectionId}/documents`, {
+      method: "POST",
+      body: formData,
+    });
+  }
+
+  async updateReportDocument(documentId: string, request: ReportDocumentRequest): Promise<ReportDocument> {
+    return this.request<ReportDocument>(`/api/admin/reports/documents/${documentId}`, {
+      method: "PUT",
+      body: JSON.stringify(request),
+    });
+  }
+
+  async deleteReportDocument(documentId: string): Promise<void> {
+    await this.request<void>(`/api/admin/reports/documents/${documentId}`, {
+      method: "DELETE",
+    });
+  }
+
   private normalizeArticle(article: any): Article {
     return {
       ...article,
@@ -523,6 +589,51 @@ export interface DashboardStats {
   monthlyUserRegistrations?: { month: string; free: number; premium: number; enterprise: number }[];
   dailyUserRegistrations?: { date: string; free: number; premium: number; enterprise: number }[];
   subscriptionStatusStats?: { status: string; count: number }[];
+}
+
+export interface ReportDocument {
+  id: string;
+  sectionId: string;
+  title: string;
+  description?: string;
+  filePath?: string;
+  originalFilename?: string;
+  fileSize?: number;
+  displayOrder: number;
+  languageCode: string;
+  isActive?: boolean;
+}
+
+export interface ReportSection {
+  id: string;
+  sectionKey: string;
+  title: string;
+  navTitle: string;
+  description?: string;
+  accessTier: 'FREE' | 'PREMIUM' | 'ENTERPRISE';
+  displayOrder: number;
+  languageCode: string;
+  isActive?: boolean;
+  documents?: ReportDocument[];
+}
+
+export interface ReportSectionRequest {
+  sectionKey: string;
+  title: string;
+  navTitle: string;
+  description?: string;
+  accessTier: 'FREE' | 'PREMIUM' | 'ENTERPRISE';
+  displayOrder: number;
+  languageCode: string;
+  isActive?: boolean;
+}
+
+export interface ReportDocumentRequest {
+  title: string;
+  description?: string;
+  displayOrder: number;
+  languageCode: string;
+  isActive?: boolean;
 }
 
 export interface AnalysisRequest {

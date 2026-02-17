@@ -42,6 +42,11 @@ const navItems: NavItem[] = [
   },
   {
     icon: <DocsIcon />,
+    name: "City Reports",
+    path: "/city-reports",
+  },
+  {
+    icon: <DocsIcon />,
     name: "Translations",
     subItems: [
       { name: "Languages", path: "/languages", pro: false },
