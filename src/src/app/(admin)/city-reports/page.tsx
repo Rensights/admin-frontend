@@ -51,6 +51,7 @@ export default function CityReportsAdminPage() {
   const [editingDocumentId, setEditingDocumentId] = useState<string | null>(null);
   const [documentForm, setDocumentForm] = useState<ReportDocumentRequest>(emptyDocument);
   const [documentFile, setDocumentFile] = useState<File | null>(null);
+  const mainBackendUrl = adminApiClient.getMainBackendUrl();
 
   const loadLanguages = useCallback(async () => {
     try {
@@ -196,11 +197,41 @@ export default function CityReportsAdminPage() {
     }
   };
 
+  const handlePreviewDocument = useCallback(
+    async (docId: string) => {
+      setError(null);
+      try {
+        const authHeaders = adminApiClient.getAuthHeaders();
+        if (!authHeaders) {
+          router.push("/login");
+          return;
+        }
+        const response = await fetch(`${mainBackendUrl}/api/reports/documents/${docId}/file`, {
+          headers: authHeaders,
+        });
+        if (!response.ok) {
+          const message = await response.text().catch(() => "Preview failed");
+          throw new Error(message || "Preview failed");
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const previewWindow = window.open(url, "_blank", "noopener,noreferrer");
+        if (!previewWindow) {
+          window.location.href = url;
+        }
+        window.setTimeout(() => {
+          window.URL.revokeObjectURL(url);
+        }, 15000);
+      } catch (err: any) {
+        setError(err.message || "Failed to preview document");
+      }
+    },
+    [mainBackendUrl, router]
+  );
+
   const sortedSections = useMemo(() => {
     return [...sections].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
   }, [sections]);
-
-  const mainBackendUrl = adminApiClient.getMainBackendUrl();
 
   if (loading) {
     return (
@@ -523,14 +554,13 @@ export default function CityReportsAdminPage() {
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        <a
-                          href={`${mainBackendUrl}/api/reports/documents/${doc.id}/file`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          type="button"
+                          onClick={() => handlePreviewDocument(doc.id)}
                           className="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600"
                         >
                           Preview
-                        </a>
+                        </button>
                         <button
                           className="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600"
                           onClick={() => handleEditDocument(section.id, doc)}
