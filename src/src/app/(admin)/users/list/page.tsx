@@ -11,6 +11,7 @@ export default function UsersListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
   const [totalPages, setTotalPages] = useState(1);
   const [totalElements, setTotalElements] = useState(0);
 
@@ -53,7 +54,7 @@ export default function UsersListPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await adminApiClient.getAllUsers(currentPage, 20);
+      const response = await adminApiClient.getAllUsers(currentPage, pageSize);
       // Handle paginated response
       if (response && Array.isArray(response.content)) {
         setUsers(response.content);
@@ -76,7 +77,7 @@ export default function UsersListPage() {
     } finally {
       setLoading(false);
     }
-  }, [router, currentPage]);
+  }, [router, currentPage, pageSize]);
 
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
@@ -86,6 +87,22 @@ export default function UsersListPage() {
     }
     loadUsers();
   }, [router, loadUsers]);
+
+  const handlePageSizeChange = (value: number) => {
+    setPageSize(value);
+    setCurrentPage(0);
+  };
+
+  const pageButtons = () => {
+    const buttons: number[] = [];
+    const total = totalPages || 1;
+    const start = Math.max(0, currentPage - 2);
+    const end = Math.min(total - 1, currentPage + 2);
+    for (let i = start; i <= end; i += 1) {
+      buttons.push(i);
+    }
+    return buttons;
+  };
 
   if (loading) {
     return (
@@ -111,7 +128,28 @@ export default function UsersListPage() {
         </div>
       )}
 
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+          <span>Rows per page</span>
+          <select
+            value={pageSize}
+            onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+            className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+          >
+            {[10, 20, 50, 100].map((size) => (
+              <option key={size} value={size}>
+                {size}
+              </option>
+            ))}
+          </select>
+          <span>
+            {totalElements > 0
+              ? `Showing ${currentPage * pageSize + 1}-${
+                  currentPage * pageSize + users.length
+                } of ${totalElements}`
+              : "No users"}
+          </span>
+        </div>
         <button
           onClick={downloadCsv}
           className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors"
@@ -184,6 +222,41 @@ export default function UsersListPage() {
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          Page {currentPage + 1} of {totalPages}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
+            disabled={currentPage === 0}
+            className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 disabled:opacity-50 dark:border-gray-700"
+          >
+            Prev
+          </button>
+          {pageButtons().map((page) => (
+            <button
+              key={page}
+              onClick={() => setCurrentPage(page)}
+              className={`px-3 py-1.5 text-sm rounded-lg border ${
+                page === currentPage
+                  ? "border-brand-500 bg-brand-500 text-white"
+                  : "border-gray-200 dark:border-gray-700"
+              }`}
+            >
+              {page + 1}
+            </button>
+          ))}
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
+            disabled={currentPage >= totalPages - 1}
+            className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 disabled:opacity-50 dark:border-gray-700"
+          >
+            Next
+          </button>
         </div>
       </div>
     </div>
