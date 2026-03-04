@@ -1,3 +1,12 @@
+import { logError, logInfo } from "./logger";
+
+const createTraceId = (): string => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `trace-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+};
+
 // Use Kong ingress URL for admin backend API with port
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://dev-admin-api.72.62.40.154.nip.io:31416';
 const MAIN_BACKEND_URL = process.env.NEXT_PUBLIC_MAIN_BACKEND_URL || 'http://localhost:8080';
@@ -16,6 +25,8 @@ class AdminApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${API_URL}${endpoint}`;
+    const startedAt = Date.now();
+    const traceId = createTraceId();
     const headers: Record<string, string> = {
       ...(options.headers as Record<string, string>),
     };
@@ -27,6 +38,16 @@ class AdminApiClient {
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
     }
+
+    if (!headers['X-Trace-Id']) {
+      headers['X-Trace-Id'] = traceId;
+    }
+
+    logInfo("admin.api.request.start", {
+      method: options.method || "GET",
+      endpoint,
+      traceId,
+    });
 
     const response = await fetch(url, {
       ...options,
@@ -41,6 +62,13 @@ class AdminApiClient {
     }
 
     if (!response.ok) {
+      logError("admin.api.request.error", {
+        method: options.method || "GET",
+        endpoint,
+        status: response.status,
+        durationMs: Date.now() - startedAt,
+        traceId,
+      });
       const errorText = await response.text().catch(() => 'Unknown error');
       let error;
       try {
@@ -50,6 +78,14 @@ class AdminApiClient {
       }
       throw new Error(error.error || error.message || `Request failed with status ${response.status}`);
     }
+
+    logInfo("admin.api.request.success", {
+      method: options.method || "GET",
+      endpoint,
+      status: response.status,
+      durationMs: Date.now() - startedAt,
+      traceId,
+    });
 
     const responseText = await response.text();
     if (!responseText) {
