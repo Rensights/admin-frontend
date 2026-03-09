@@ -270,6 +270,17 @@ class AdminApiClient {
     return this.request<{ enabled: boolean }>(`/api/admin/weekly-deals/enable`);
   }
 
+  async getGoogleAnalyticsMeasurementId(): Promise<{ measurementId: string }> {
+    return this.request<{ measurementId: string }>(`/api/admin/settings/google-analytics`);
+  }
+
+  async setGoogleAnalyticsMeasurementId(measurementId: string): Promise<{ measurementId: string }> {
+    return this.request<{ measurementId: string }>(`/api/admin/settings/google-analytics`, {
+      method: "PUT",
+      body: JSON.stringify({ measurementId }),
+    });
+  }
+
   async deleteDeal(dealId: string): Promise<void> {
     return this.request<void>(`/api/admin/deals/${dealId}`, {
       method: 'DELETE',

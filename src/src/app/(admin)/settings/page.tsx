@@ -9,13 +9,19 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [weeklyDealsEnabled, setWeeklyDealsEnabled] = useState(true);
+  const [gaMeasurementId, setGaMeasurementId] = useState("");
+  const [gaSaving, setGaSaving] = useState(false);
 
   const loadSettings = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const settings = await adminApiClient.getWeeklyDealsEnabled();
-      setWeeklyDealsEnabled(settings.enabled);
+      const [weekly, ga] = await Promise.all([
+        adminApiClient.getWeeklyDealsEnabled(),
+        adminApiClient.getGoogleAnalyticsMeasurementId(),
+      ]);
+      setWeeklyDealsEnabled(weekly.enabled);
+      setGaMeasurementId(ga.measurementId || "");
     } catch (err: any) {
       setError(err.message || "Failed to load settings");
     } finally {
@@ -39,6 +45,19 @@ export default function SettingsPage() {
       setWeeklyDealsEnabled(next);
     } catch (err: any) {
       setError(err.message || "Failed to update weekly deals setting");
+    }
+  };
+
+  const handleSaveGaMeasurementId = async () => {
+    setError(null);
+    try {
+      setGaSaving(true);
+      const result = await adminApiClient.setGoogleAnalyticsMeasurementId(gaMeasurementId.trim());
+      setGaMeasurementId(result.measurementId || "");
+    } catch (err: any) {
+      setError(err.message || "Failed to update Google Analytics ID");
+    } finally {
+      setGaSaving(false);
     }
   };
 
@@ -81,6 +100,33 @@ export default function SettingsPage() {
           >
             {weeklyDealsEnabled ? "Weekly Deals Enabled" : "Weekly Deals Disabled"}
           </button>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-white/[0.03]">
+        <div className="flex flex-col gap-4">
+          <div>
+            <div className="text-base font-semibold text-gray-800 dark:text-white/90">Google Analytics</div>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Set the Google Analytics measurement ID for the app frontend.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              type="text"
+              value={gaMeasurementId}
+              onChange={(e) => setGaMeasurementId(e.target.value)}
+              className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              placeholder="G-XXXXXXXXXX"
+            />
+            <button
+              onClick={handleSaveGaMeasurementId}
+              className="px-4 py-2 rounded-lg text-white transition-colors bg-brand-500 hover:bg-brand-600 disabled:opacity-60"
+              disabled={gaSaving}
+            >
+              {gaSaving ? "Saving..." : "Save"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
