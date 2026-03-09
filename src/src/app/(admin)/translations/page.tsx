@@ -340,7 +340,7 @@ function TranslationsPageContent() {
                 value={formData.translationValue}
                 onChange={(e) => setFormData({ ...formData, translationValue: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                rows={3}
+                rows={12}
                 placeholder="Enter the translated text"
               />
             </div>
