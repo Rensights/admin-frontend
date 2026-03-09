@@ -103,9 +103,14 @@ function TranslationsPageContent() {
     }
   }, [selectedLanguage, loadNamespaces, loadTranslations]);
 
-  const filteredTranslations = translations.filter(
-    t => t.namespace === selectedNamespace
-  );
+  const isPrivacyTerms = selectedNamespace === "privacyTerms";
+  const filteredTranslations = translations
+    .filter(t => t.namespace === selectedNamespace)
+    .filter(t =>
+      isPrivacyTerms
+        ? ["privacyTerms.fullContent", "privacyTerms.title"].includes(t.translationKey)
+        : true
+    );
 
   const handleCreate = async () => {
     setError(null);
@@ -214,10 +219,23 @@ function TranslationsPageContent() {
   };
 
   const startCreate = () => {
+    const hasFullContent = translations.some(
+      (t) => t.namespace === selectedNamespace && t.translationKey === "privacyTerms.fullContent"
+    );
+    const hasTitle = translations.some(
+      (t) => t.namespace === selectedNamespace && t.translationKey === "privacyTerms.title"
+    );
+    const nextKey =
+      isPrivacyTerms && !hasFullContent
+        ? "privacyTerms.fullContent"
+        : isPrivacyTerms && !hasTitle
+        ? "privacyTerms.title"
+        : "";
+
     setFormData({
       languageCode: selectedLanguage,
       namespace: selectedNamespace,
-      translationKey: "",
+      translationKey: isPrivacyTerms ? nextKey : "",
       translationValue: "",
       description: "",
     });
@@ -330,6 +348,7 @@ function TranslationsPageContent() {
                 onChange={(e) => setFormData({ ...formData, translationKey: e.target.value })}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 placeholder="e.g., welcome.message"
+                readOnly={isPrivacyTerms}
               />
             </div>
             <div>
