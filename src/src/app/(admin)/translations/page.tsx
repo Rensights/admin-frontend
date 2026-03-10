@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { adminApiClient, Translation, TranslationRequest } from "@/lib/api";
 
@@ -26,6 +26,7 @@ function TranslationsPageContent() {
     translationValue: "",
     description: "",
   });
+  const richTextRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const langParam = searchParams?.get("lang");
@@ -104,6 +105,7 @@ function TranslationsPageContent() {
   }, [selectedLanguage, loadNamespaces, loadTranslations]);
 
   const isPrivacyTerms = selectedNamespace === "privacyTerms";
+  const isRichText = formData.translationKey === "privacyTerms.fullContent";
   const filteredTranslations = translations
     .filter(t => t.namespace === selectedNamespace)
     .filter(t =>
@@ -244,6 +246,23 @@ function TranslationsPageContent() {
     setEditingTranslation(null);
   };
 
+  useEffect(() => {
+    if (!isRichText || !richTextRef.current) return;
+    if (richTextRef.current.innerHTML !== formData.translationValue) {
+      richTextRef.current.innerHTML = formData.translationValue || "";
+    }
+  }, [isRichText, formData.translationValue]);
+
+  const handleRichCommand = (command: string, value?: string) => {
+    if (!richTextRef.current) return;
+    richTextRef.current.focus();
+    document.execCommand(command, false, value);
+    setFormData((prev) => ({
+      ...prev,
+      translationValue: richTextRef.current?.innerHTML || "",
+    }));
+  };
+
   const cancelEdit = () => {
     setIsEditing(false);
     setIsCreating(false);
@@ -355,17 +374,89 @@ function TranslationsPageContent() {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Translation Value
               </label>
-              <textarea
-                value={formData.translationValue}
-                onChange={(e) => setFormData({ ...formData, translationValue: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                rows={formData.translationKey === "privacyTerms.fullContent" ? 20 : 12}
-                placeholder={
-                  formData.translationKey === "privacyTerms.fullContent"
-                    ? "Enter full HTML content (e.g., <h2>Privacy Policy</h2><p>...</p>)"
-                    : "Enter the translated text"
-                }
-              />
+              {isRichText ? (
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleRichCommand("bold")}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md dark:border-gray-600 dark:text-white"
+                    >
+                      Bold
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRichCommand("italic")}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md dark:border-gray-600 dark:text-white"
+                    >
+                      Italic
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRichCommand("underline")}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md dark:border-gray-600 dark:text-white"
+                    >
+                      Underline
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRichCommand("insertUnorderedList")}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md dark:border-gray-600 dark:text-white"
+                    >
+                      Bullets
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRichCommand("insertOrderedList")}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md dark:border-gray-600 dark:text-white"
+                    >
+                      Numbered
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = window.prompt("Enter URL");
+                        if (url) {
+                          handleRichCommand("createLink", url);
+                        }
+                      }}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md dark:border-gray-600 dark:text-white"
+                    >
+                      Link
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRichCommand("removeFormat")}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md dark:border-gray-600 dark:text-white"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div
+                    ref={richTextRef}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onInput={(e) =>
+                      setFormData({
+                        ...formData,
+                        translationValue: e.currentTarget.innerHTML,
+                      })
+                    }
+                    className="min-h-[320px] w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Rich text editor for privacy content. HTML will be stored.
+                  </p>
+                </div>
+              ) : (
+                <textarea
+                  value={formData.translationValue}
+                  onChange={(e) => setFormData({ ...formData, translationValue: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  rows={12}
+                  placeholder="Enter the translated text"
+                />
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
