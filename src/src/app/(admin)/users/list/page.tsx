@@ -16,16 +16,37 @@ export default function UsersListPage() {
   const [totalElements, setTotalElements] = useState(0);
 
   const downloadCsv = () => {
-    const headers = ["Email", "Name", "Tier", "Status", "Created"];
+    const headers = [
+      "ID",
+      "Email",
+      "First Name",
+      "Last Name",
+      "Phone",
+      "Budget",
+      "Portfolio",
+      "Goals",
+      "Registration Plan",
+      "Tier",
+      "Customer ID",
+      "Status",
+      "Email Verified",
+      "Created At",
+    ];
     const rows = users.map((user) => {
-      const name = user.firstName || user.lastName 
-        ? `${user.firstName || ''} ${user.lastName || ''}`.trim()
-        : "N/A";
       return [
+        user.id || "",
         user.email || "",
-        name,
+        user.firstName || "",
+        user.lastName || "",
+        user.phone || "",
+        user.budget || "",
+        user.portfolio || "",
+        user.goals && user.goals.length > 0 ? user.goals.join(" | ") : "",
+        user.registrationPlan || "",
         user.userTier || "",
+        user.customerId || "",
         user.isActive ? "Active" : "Inactive",
+        user.emailVerified ? "Verified" : "Not Verified",
         user.createdAt ? new Date(user.createdAt).toISOString() : "",
       ];
     });
@@ -48,6 +69,89 @@ export default function UsersListPage() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const downloadCsvWithHistory = async () => {
+    const headers = [
+      "ID",
+      "Email",
+      "First Name",
+      "Last Name",
+      "Phone",
+      "Budget",
+      "Portfolio",
+      "Goals",
+      "Registration Plan",
+      "Tier",
+      "Customer ID",
+      "Status",
+      "Email Verified",
+      "Created At",
+      "Subscription History",
+    ];
+
+    const escapeCell = (value: string) => {
+      const safe = String(value ?? "");
+      return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
+    };
+
+    const formatSubscription = (sub: any) => {
+      const start = sub.startDate ? new Date(sub.startDate).toISOString() : "";
+      const end = sub.endDate ? new Date(sub.endDate).toISOString() : "";
+      const stripe = sub.stripeSubscriptionId || "";
+      return `${sub.planType || ""} | ${sub.status || ""} | ${start} | ${end} | ${stripe}`.trim();
+    };
+
+    try {
+      const histories = await Promise.all(
+        users.map(async (user) => {
+          try {
+            const subs = await adminApiClient.getUserSubscriptions(user.id);
+            return subs || [];
+          } catch {
+            return [];
+          }
+        })
+      );
+
+      const rows = users.map((user, index) => {
+        const subs = histories[index] || [];
+        return [
+          user.id || "",
+          user.email || "",
+          user.firstName || "",
+          user.lastName || "",
+          user.phone || "",
+          user.budget || "",
+          user.portfolio || "",
+          user.goals && user.goals.length > 0 ? user.goals.join(" | ") : "",
+          user.registrationPlan || "",
+          user.userTier || "",
+          user.customerId || "",
+          user.isActive ? "Active" : "Inactive",
+          user.emailVerified ? "Verified" : "Not Verified",
+          user.createdAt ? new Date(user.createdAt).toISOString() : "",
+          subs.length > 0 ? subs.map(formatSubscription).join(" || ") : "",
+        ];
+      });
+
+      const csv = [headers, ...rows]
+        .map((row) => row.map(escapeCell).join(","))
+        .join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "users_with_subscriptions.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to download CSV with subscription history:", error);
+      setError("Failed to download CSV with subscription history");
+    }
   };
 
   const loadUsers = useCallback(async () => {
@@ -150,12 +254,20 @@ export default function UsersListPage() {
               : "No users"}
           </span>
         </div>
-        <button
-          onClick={downloadCsv}
-          className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors"
-        >
-          Download CSV
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={downloadCsv}
+            className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors"
+          >
+            Download CSV
+          </button>
+          <button
+            onClick={downloadCsvWithHistory}
+            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-950 transition-colors"
+          >
+            Download CSV (With History)
+          </button>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
