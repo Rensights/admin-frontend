@@ -162,6 +162,10 @@ class AdminApiClient {
     });
   }
 
+  async getUserSubscriptions(userId: string): Promise<Subscription[]> {
+    return this.request<Subscription[]>(`/api/admin/users/${userId}/subscriptions`);
+  }
+
   // Subscription management endpoints
   async getAllSubscriptions(page: number = 0, size: number = 20): Promise<PaginatedResponse<Subscription>> {
     return this.request<PaginatedResponse<Subscription>>(`/api/admin/subscriptions?page=${page}&size=${size}`);
@@ -618,6 +622,7 @@ export interface Subscription {
   startDate: string;
   endDate?: string;
   createdAt: string;
+  stripeSubscriptionId?: string;
 }
 
 export interface DashboardStats {

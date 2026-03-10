@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { adminApiClient, User } from "@/lib/api";
+import { adminApiClient, Subscription, User } from "@/lib/api";
 import Link from "next/link";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
@@ -18,6 +18,9 @@ export default function UserDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [subscriptionsLoading, setSubscriptionsLoading] = useState(false);
+  const [subscriptionsError, setSubscriptionsError] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     firstName: "",
@@ -33,8 +36,13 @@ export default function UserDetailPage() {
     
     setLoading(true);
     setError(null);
+    setSubscriptionsLoading(true);
+    setSubscriptionsError(null);
     try {
-      const userData = await adminApiClient.getUserById(userId);
+      const [userData, userSubscriptions] = await Promise.all([
+        adminApiClient.getUserById(userId),
+        adminApiClient.getUserSubscriptions(userId),
+      ]);
       setUser(userData);
       setFormData({
         firstName: userData.firstName || "",
@@ -44,14 +52,17 @@ export default function UserDetailPage() {
         isActive: userData.isActive,
         emailVerified: userData.emailVerified || false,
       });
+      setSubscriptions(userSubscriptions || []);
     } catch (error: any) {
       console.error("Error loading user:", error);
       setError(error.message || "Failed to load user");
       if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
         router.push('/login');
       }
+      setSubscriptionsError(error.message || "Failed to load subscriptions");
     } finally {
       setLoading(false);
+      setSubscriptionsLoading(false);
     }
   }, [userId, router]);
 
@@ -329,10 +340,55 @@ export default function UserDetailPage() {
           </div>
         )}
       </div>
+
+      <div className="mt-6 rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Subscription History</h2>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              All subscriptions associated with this user.
+            </p>
+          </div>
+        </div>
+
+        {subscriptionsLoading ? (
+          <div className="mt-4 text-sm text-gray-500">Loading subscriptions...</div>
+        ) : subscriptionsError ? (
+          <div className="mt-4 text-sm text-red-600">{subscriptionsError}</div>
+        ) : subscriptions.length === 0 ? (
+          <div className="mt-4 text-sm text-gray-500">No subscriptions found.</div>
+        ) : (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left text-gray-500 dark:text-gray-400">
+                <tr>
+                  <th className="pb-3">Plan</th>
+                  <th className="pb-3">Status</th>
+                  <th className="pb-3">Start</th>
+                  <th className="pb-3">End</th>
+                  <th className="pb-3">Created</th>
+                  <th className="pb-3">Stripe ID</th>
+                </tr>
+              </thead>
+              <tbody className="text-gray-800 dark:text-white/90">
+                {subscriptions.map((sub) => (
+                  <tr key={sub.id} className="border-t border-gray-100 dark:border-gray-800">
+                    <td className="py-3">{sub.planType}</td>
+                    <td className="py-3">{sub.status}</td>
+                    <td className="py-3">{sub.startDate ? new Date(sub.startDate).toLocaleString() : "-"}</td>
+                    <td className="py-3">{sub.endDate ? new Date(sub.endDate).toLocaleString() : "-"}</td>
+                    <td className="py-3">{sub.createdAt ? new Date(sub.createdAt).toLocaleString() : "-"}</td>
+                    <td className="py-3">{sub.stripeSubscriptionId || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
-
 
 
 
