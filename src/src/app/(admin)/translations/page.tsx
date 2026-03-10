@@ -377,6 +377,24 @@ function TranslationsPageContent() {
               {isRichText ? (
                 <div className="space-y-2">
                   <div className="flex flex-wrap gap-2">
+                    <select
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value) {
+                          handleRichCommand("formatBlock", value);
+                        }
+                      }}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                      defaultValue=""
+                    >
+                      <option value="" disabled>
+                        Format
+                      </option>
+                      <option value="p">Paragraph</option>
+                      <option value="h2">Heading 2</option>
+                      <option value="h3">Heading 3</option>
+                      <option value="blockquote">Quote</option>
+                    </select>
                     <button
                       type="button"
                       onClick={() => handleRichCommand("bold")}
@@ -414,6 +432,27 @@ function TranslationsPageContent() {
                     </button>
                     <button
                       type="button"
+                      onClick={() => handleRichCommand("justifyLeft")}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md dark:border-gray-600 dark:text-white"
+                    >
+                      Left
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRichCommand("justifyCenter")}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md dark:border-gray-600 dark:text-white"
+                    >
+                      Center
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRichCommand("justifyRight")}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded-md dark:border-gray-600 dark:text-white"
+                    >
+                      Right
+                    </button>
+                    <button
+                      type="button"
                       onClick={() => {
                         const url = window.prompt("Enter URL");
                         if (url) {
@@ -442,7 +481,7 @@ function TranslationsPageContent() {
                         translationValue: e.currentTarget.innerHTML,
                       })
                     }
-                    className="min-h-[320px] w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    className="min-h-[360px] w-full rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                   />
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Rich text editor for privacy content. HTML will be stored.
