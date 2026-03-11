@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { adminApiClient, Translation, TranslationRequest } from "@/lib/api";
 
+const MANDATORY_NAMESPACES = ["pricing"];
+
 function TranslationsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -56,13 +58,15 @@ function TranslationsPageContent() {
   const loadNamespaces = useCallback(async () => {
     try {
       const ns = await adminApiClient.getNamespaces(selectedLanguage);
-      setNamespaces(ns.length > 0 ? ns : ["common"]);
+      const merged = Array.from(new Set([...ns, ...MANDATORY_NAMESPACES]));
+      setNamespaces(merged.length > 0 ? merged : ["common"]);
       if (ns.length > 0 && !ns.includes(selectedNamespace)) {
         setSelectedNamespace(ns[0]);
       }
     } catch (err: any) {
       console.error("Error loading namespaces:", err);
-      setNamespaces(["common"]);
+      const merged = Array.from(new Set(["common", ...MANDATORY_NAMESPACES]));
+      setNamespaces(merged);
     }
   }, [selectedLanguage, selectedNamespace]);
 
@@ -74,8 +78,9 @@ function TranslationsPageContent() {
       setTranslations(data);
       // Update namespaces from loaded translations
       const uniqueNamespaces = Array.from(new Set(data.map(t => t.namespace)));
-      if (uniqueNamespaces.length > 0) {
-        setNamespaces(uniqueNamespaces);
+      const merged = Array.from(new Set([...uniqueNamespaces, ...MANDATORY_NAMESPACES]));
+      if (merged.length > 0) {
+        setNamespaces(merged);
       }
     } catch (err: any) {
       console.error("Error loading translations:", err);
@@ -198,6 +203,14 @@ function TranslationsPageContent() {
       }
       const seeded = await response.json();
       setSeedMessage(`Seeded ${seeded.length} defaults for ${selectedLanguage.toUpperCase()}.`);
+      if (Array.isArray(seeded) && seeded.length > 0) {
+        const seededNamespaces = Array.from(new Set(seeded.map((entry: Translation) => entry.namespace)));
+        const merged = Array.from(new Set([...namespaces, ...seededNamespaces, ...MANDATORY_NAMESPACES]));
+        setNamespaces(merged);
+        if (!merged.includes(selectedNamespace) && merged.length > 0) {
+          setSelectedNamespace(merged[0]);
+        }
+      }
       await loadTranslations();
       await loadNamespaces();
     } catch (err: any) {
