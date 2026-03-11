@@ -69,7 +69,7 @@ export default function ArticlesAdminPage() {
         return;
       }
       if (!form.coverImage || !form.coverImage.trim()) {
-        setError("Cover Image URL is required");
+        setError("Cover image is required");
         return;
       }
       if (editingId) {
@@ -199,15 +199,30 @@ export default function ArticlesAdminPage() {
                 onChange={(e) => setForm({ ...form, slug: e.target.value })}
               />
             </div>
-            <div>
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Cover Image URL *
+                Cover Image *
               </label>
               <input
+                type="file"
+                accept="image/*"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                value={form.coverImage || ""}
-                onChange={(e) => setForm({ ...form, coverImage: e.target.value })}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    const result = String(reader.result || "");
+                    if (result) {
+                      setForm({ ...form, coverImage: result });
+                    }
+                  };
+                  reader.readAsDataURL(file);
+                }}
               />
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                Upload an image. It will be saved in the database.
+              </p>
             </div>
             {form.coverImage && (
               <div className="md:col-span-2">
