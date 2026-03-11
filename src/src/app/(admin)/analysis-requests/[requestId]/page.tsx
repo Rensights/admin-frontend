@@ -56,6 +56,9 @@ export default function AnalysisRequestDetailPage() {
     try {
       const updated = await adminApiClient.updateAnalysisRequestStatus(requestId, "COMPLETED");
       setRequest(updated);
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("analysis-request-updated"));
+      }
     } catch (err: any) {
       setError(err.message || "Failed to approve analysis request");
     } finally {
@@ -600,7 +603,6 @@ export default function AnalysisRequestDetailPage() {
     </div>
   );
 }
-
 
 
 

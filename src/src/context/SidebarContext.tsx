@@ -71,7 +71,16 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
       fetchPendingCount();
       // Refresh count every 30 seconds
       const interval = setInterval(fetchPendingCount, 30000);
-      return () => clearInterval(interval);
+
+      const handleAnalysisUpdated = () => {
+        fetchPendingCount();
+      };
+
+      window.addEventListener("analysis-request-updated", handleAnalysisUpdated);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener("analysis-request-updated", handleAnalysisUpdated);
+      };
     }
   }, []);
 
