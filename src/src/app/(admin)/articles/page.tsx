@@ -68,6 +68,10 @@ export default function ArticlesAdminPage() {
         setError("Title and Slug are required");
         return;
       }
+      if (!form.coverImage || !form.coverImage.trim()) {
+        setError("Cover Image URL is required");
+        return;
+      }
       if (editingId) {
         const updated = await adminApiClient.updateArticle(editingId, form);
         setArticles(articles.map((item) => (item.id === updated.id ? updated : item)));
@@ -197,7 +201,7 @@ export default function ArticlesAdminPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Cover Image URL
+                Cover Image URL *
               </label>
               <input
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
@@ -205,6 +209,19 @@ export default function ArticlesAdminPage() {
                 onChange={(e) => setForm({ ...form, coverImage: e.target.value })}
               />
             </div>
+            {form.coverImage && (
+              <div className="md:col-span-2">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Preview</p>
+                <div className="w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={form.coverImage}
+                    alt="Cover preview"
+                    className="h-48 w-full object-cover"
+                  />
+                </div>
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Published At
