@@ -212,8 +212,28 @@ jobs:
             --namespace ${DEV_NAMESPACE} \
             --dry-run=client -o yaml | kubectl apply -f -
 
+      - name: Vault + External Secrets Operator (dev)
+        env:
+          VAULT_ESO_TOKEN: ${{ secrets.VAULT_ESO_TOKEN }}
+          VAULT_INTERNAL_ADDR: ${{ vars.VAULT_INTERNAL_ADDR }}
+        run: |
+          export KUBECONFIG=/tmp/kubeconfig
+          if [ -z "${VAULT_ESO_TOKEN}" ]; then
+            echo "VAULT_ESO_TOKEN not set — skipping SecretStore / ExternalSecrets."
+            exit 0
+          fi
+          VAULT_SRV="${VAULT_INTERNAL_ADDR:-http://vault.vault.svc.cluster.local:8200}"
+          kubectl create secret generic vault-eso-token -n ${DEV_NAMESPACE} \
+            --from-literal=token="${VAULT_ESO_TOKEN}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          sed "s|VAULT_SERVER_PLACEHOLDER|${VAULT_SRV}|g" infra/external-secrets/dev/secretstore-vault-dev.yaml | kubectl apply -f -
+          kubectl apply -f infra/external-secrets/dev/externalsecrets.yaml
+          kubectl wait --for=condition=Ready "secretstore/vault-dev" -n "${DEV_NAMESPACE}" --timeout=120s || true
+
       - name: Setup admin-frontend-config secret for dev
         id: admin-frontend-config
+        env:
+          VAULT_ESO_TOKEN: ${{ secrets.VAULT_ESO_TOKEN }}
         run: |
           export KUBECONFIG=/tmp/kubeconfig
           ADMIN_BACKEND_URL="http://dev-admin-api.72.62.40.154.nip.io:31416"
@@ -231,6 +251,10 @@ jobs:
           
           echo "admin_api_url=${ADMIN_BACKEND_URL}" >> $GITHUB_OUTPUT
           echo "main_backend_url=${MAIN_BACKEND_URL}" >> $GITHUB_OUTPUT
+          if [ -n "${VAULT_ESO_TOKEN}" ]; then
+            echo "Skipping kubectl create admin-frontend-config (managed by ExternalSecret from Vault)."
+            exit 0
+          fi
           kubectl create secret generic admin-frontend-config \
             --from-literal=NEXT_PUBLIC_API_URL="$ADMIN_BACKEND_URL" \
             --from-literal=NEXT_PUBLIC_MAIN_BACKEND_URL="$MAIN_BACKEND_URL" \
