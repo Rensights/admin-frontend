@@ -20,6 +20,7 @@ spec:
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
+        reloader.stakater.com/auto: "true"
         deployment.kubernetes.io/revision: "{{ .Release.Revision }}"
       labels:
         {{- include "admin-frontend.selectorLabels" . | nindent 8 }}
