@@ -180,7 +180,7 @@ function TranslationsPageContent() {
   };
 
   const handleSeedDefaults = async () => {
-    if (!confirm(`Seed default translations for ${selectedLanguage.toUpperCase()} and overwrite existing values?`)) {
+    if (!confirm(`Add missing default translations for ${selectedLanguage.toUpperCase()}? Existing values will be kept.`)) {
       return;
     }
     setError(null);
@@ -189,7 +189,7 @@ function TranslationsPageContent() {
     try {
       const url = new URL(`/api/admin/translations/seed-default`, adminApiClient.getBaseUrl());
       url.searchParams.set("language", selectedLanguage);
-      url.searchParams.set("overwrite", "true");
+      url.searchParams.set("overwrite", "false");
       const response = await fetch(url.toString(), {
         method: "POST",
         headers: {
@@ -202,7 +202,11 @@ function TranslationsPageContent() {
         throw new Error(text || `Request failed with status ${response.status}`);
       }
       const seeded = await response.json();
-      setSeedMessage(`Seeded ${seeded.length} defaults for ${selectedLanguage.toUpperCase()}.`);
+      setSeedMessage(
+        seeded.length === 0
+          ? `No missing defaults for ${selectedLanguage.toUpperCase()}. Existing translations are untouched.`
+          : `Added ${seeded.length} missing default${seeded.length === 1 ? "" : "s"} for ${selectedLanguage.toUpperCase()}. Existing values were kept.`
+      );
       if (Array.isArray(seeded) && seeded.length > 0) {
         const seededNamespaces = Array.from(new Set(seeded.map((entry: Translation) => entry.namespace)));
         const merged = Array.from(new Set([...namespaces, ...seededNamespaces, ...MANDATORY_NAMESPACES]));
@@ -359,7 +363,7 @@ function TranslationsPageContent() {
           className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-60"
           disabled={isSeedingDefaults}
         >
-          {isSeedingDefaults ? "Seeding..." : "Seed Defaults (Overwrite)"}
+          {isSeedingDefaults ? "Adding..." : "Add Missing Defaults"}
         </button>
       </div>
 
