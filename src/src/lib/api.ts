@@ -7,19 +7,10 @@ const createTraceId = (): string => {
   return `trace-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
 };
 
-// Use Kong ingress URL for admin backend API with port
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://dev-admin-api.72.62.40.154.nip.io:31416';
-const MAIN_BACKEND_URL = process.env.NEXT_PUBLIC_MAIN_BACKEND_URL || 'http://localhost:8080';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const MAIN_BACKEND_URL = process.env.NEXT_PUBLIC_MAIN_BACKEND_URL || '';
 
 class AdminApiClient {
-  private token: string | null = null;
-
-  constructor() {
-    if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('admin_token');
-    }
-  }
-
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -35,10 +26,6 @@ class AdminApiClient {
       headers['Content-Type'] = 'application/json';
     }
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
-    }
-
     if (!headers['X-Trace-Id']) {
       headers['X-Trace-Id'] = traceId;
     }
@@ -52,10 +39,10 @@ class AdminApiClient {
     const response = await fetch(url, {
       ...options,
       headers,
+      credentials: 'include',
     });
 
     if (response.status === 401 || response.status === 403) {
-      this.clearToken();
       if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
         window.location.href = '/login';
       }
@@ -106,44 +93,28 @@ class AdminApiClient {
     return MAIN_BACKEND_URL;
   }
 
-  getAuthHeaders() {
-    if (!this.token) {
-      return null;
-    }
-    return { Authorization: `Bearer ${this.token}` };
-  }
-
-  setToken(token: string) {
-    this.token = token;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('admin_token', token);
-    }
-  }
-
-  clearToken() {
-    this.token = null;
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('admin_token');
-    }
-  }
-
   // Auth endpoints
   async login(email: string, password: string): Promise<AdminAuthResponse> {
-    const response = await this.request<AdminAuthResponse>('/api/admin/auth/login', {
+    return this.request<AdminAuthResponse>('/api/admin/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
-    if (response.token) {
-      this.setToken(response.token);
-    }
-    return response;
   }
 
-  logout() {
-    this.clearToken();
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
+  async logout(): Promise<void> {
+    try {
+      await this.request<void>('/api/admin/auth/logout', {
+        method: 'POST',
+      });
+    } finally {
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
     }
+  }
+
+  async getMe(): Promise<AdminAuthResponse> {
+    return this.request<AdminAuthResponse>('/api/admin/auth/me');
   }
 
   // User management endpoints
@@ -589,7 +560,6 @@ class AdminApiClient {
 }
 
 export interface AdminAuthResponse {
-  token: string;
   email: string;
   firstName?: string;
   lastName?: string;

@@ -30,11 +30,6 @@ export default function SettingsPage() {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem("admin_token");
-    if (!token) {
-      router.push("/login");
-      return;
-    }
     loadSettings();
   }, [router, loadSettings]);
 

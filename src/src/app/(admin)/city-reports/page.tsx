@@ -86,11 +86,6 @@ export default function CityReportsAdminPage() {
   }, [language, router]);
 
   useEffect(() => {
-    const token = localStorage.getItem("admin_token");
-    if (!token) {
-      router.push("/login");
-      return;
-    }
     loadLanguages();
   }, [router, loadLanguages]);
 
@@ -201,13 +196,8 @@ export default function CityReportsAdminPage() {
     async (docId: string) => {
       setError(null);
       try {
-        const authHeaders = adminApiClient.getAuthHeaders();
-        if (!authHeaders) {
-          router.push("/login");
-          return;
-        }
         const response = await fetch(`${mainBackendUrl}/api/reports/documents/${docId}/file`, {
-          headers: authHeaders,
+          credentials: 'include',
         });
         if (!response.ok) {
           const message = await response.text().catch(() => "Preview failed");
@@ -226,7 +216,7 @@ export default function CityReportsAdminPage() {
         setError(err.message || "Failed to preview document");
       }
     },
-    [mainBackendUrl, router]
+    [mainBackendUrl]
   );
 
   const sortedSections = useMemo(() => {

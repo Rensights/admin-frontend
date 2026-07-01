@@ -31,11 +31,6 @@ export default function AvailableDealsPage() {
   }, [currentPage]);
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
     loadDeals();
   }, [router, currentPage, loadDeals]);
 

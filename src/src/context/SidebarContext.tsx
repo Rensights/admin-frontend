@@ -65,23 +65,19 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     };
 
-    // Check if user is authenticated
-    const token = localStorage.getItem('admin_token');
-    if (token) {
+    fetchPendingCount();
+    // Refresh count every 30 seconds
+    const interval = setInterval(fetchPendingCount, 30000);
+
+    const handleAnalysisUpdated = () => {
       fetchPendingCount();
-      // Refresh count every 30 seconds
-      const interval = setInterval(fetchPendingCount, 30000);
+    };
 
-      const handleAnalysisUpdated = () => {
-        fetchPendingCount();
-      };
-
-      window.addEventListener("analysis-request-updated", handleAnalysisUpdated);
-      return () => {
-        clearInterval(interval);
-        window.removeEventListener("analysis-request-updated", handleAnalysisUpdated);
-      };
-    }
+    window.addEventListener("analysis-request-updated", handleAnalysisUpdated);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("analysis-request-updated", handleAnalysisUpdated);
+    };
   }, []);
 
   const toggleSidebar = () => {

@@ -1,0 +1,8 @@
+# Production environment overrides for admin-frontend
+replicaCount: 2
+
+image:
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: ghcr-credentials

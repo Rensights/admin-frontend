@@ -18,11 +18,14 @@ export default function AdminLayout({
   const [isAuthChecked, setIsAuthChecked] = useState(false);
 
   useEffect(() => {
-    if (!adminApiClient.getAuthHeaders()) {
-      router.replace("/login");
-      return;
-    }
-    setIsAuthChecked(true);
+    adminApiClient.getMe()
+      .then(() => {
+        setIsAuthChecked(true);
+      })
+      .catch(() => {
+        // request() already redirects to /login on 401; this is a safety fallback
+        router.replace("/login");
+      });
   }, [router]);
 
   if (!isAuthChecked) {

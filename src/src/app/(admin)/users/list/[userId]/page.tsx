@@ -67,11 +67,6 @@ export default function UserDetailPage() {
   }, [userId, router]);
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
     loadUser();
   }, [router, loadUser]);
 

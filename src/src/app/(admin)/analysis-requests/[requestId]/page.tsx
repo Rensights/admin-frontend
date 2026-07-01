@@ -67,11 +67,6 @@ export default function AnalysisRequestDetailPage() {
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
     loadRequest();
   }, [router, loadRequest]);
 

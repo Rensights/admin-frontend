@@ -46,11 +46,6 @@ export default function ArticlesAdminPage() {
   }, [router]);
 
   useEffect(() => {
-    const token = localStorage.getItem("admin_token");
-    if (!token) {
-      router.push("/login");
-      return;
-    }
     loadData();
   }, [router, loadData]);
 

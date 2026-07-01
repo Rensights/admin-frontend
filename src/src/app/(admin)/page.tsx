@@ -33,11 +33,6 @@ export default function Dashboard() {
   }, [router]);
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
     loadStats();
   }, [router, loadStats]);
 

@@ -27,11 +27,6 @@ export default function EarlyAccessRequestsPage() {
   }, [router]);
 
   useEffect(() => {
-    const token = localStorage.getItem("admin_token");
-    if (!token) {
-      router.push("/login");
-      return;
-    }
     loadRequests();
   }, [router, loadRequests]);
 

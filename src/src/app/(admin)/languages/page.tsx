@@ -41,11 +41,6 @@ export default function LanguagesPage() {
   }, [router]);
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
     loadLanguages();
   }, [router, loadLanguages]);
 

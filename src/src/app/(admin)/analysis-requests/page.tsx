@@ -29,11 +29,6 @@ export default function AnalysisRequestsPage() {
   }, [currentPage]);
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
     loadRequests();
   }, [router, currentPage, loadRequests]);
 

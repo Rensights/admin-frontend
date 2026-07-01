@@ -35,11 +35,6 @@ export default function DealDetailPage() {
   }, [dealId]);
 
   useEffect(() => {
-    const token = localStorage.getItem('admin_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
     if (dealId) {
       loadDeal();
     }
