@@ -152,6 +152,31 @@ class AdminApiClient {
     return this.request<DashboardStats>('/api/admin/dashboard/stats');
   }
 
+  // Customer analytics (DAU/MAU, per-customer login stats/history)
+  async getCustomerAnalyticsSummary(): Promise<CustomerAnalyticsSummary> {
+    return this.request<CustomerAnalyticsSummary>('/api/admin/customer-analytics/summary');
+  }
+
+  async getCustomerAnalyticsTrend(days: number = 30): Promise<DailyActiveUsersPoint[]> {
+    return this.request<DailyActiveUsersPoint[]>(`/api/admin/customer-analytics/trend?days=${days}`);
+  }
+
+  async getCustomerLoginStats(page: number = 0, size: number = 20): Promise<PaginatedResponse<CustomerLoginStat>> {
+    return this.request<PaginatedResponse<CustomerLoginStat>>(
+      `/api/admin/customer-analytics/customers?page=${page}&size=${size}`
+    );
+  }
+
+  async getUserLoginSummary(userId: string): Promise<UserLoginSummary> {
+    return this.request<UserLoginSummary>(`/api/admin/customer-analytics/customers/${userId}/summary`);
+  }
+
+  async getUserLoginHistory(userId: string, page: number = 0, size: number = 20): Promise<PaginatedResponse<LoginEvent>> {
+    return this.request<PaginatedResponse<LoginEvent>>(
+      `/api/admin/customer-analytics/customers/${userId}/history?page=${page}&size=${size}`
+    );
+  }
+
   // Sync all users invoices
   async syncAllUsersInvoices(): Promise<{ message: string; syncedCount: number }> {
     return this.request<{ message: string; syncedCount: number }>('/api/admin/invoices/sync-all', {
@@ -628,6 +653,36 @@ export interface DashboardStats {
   monthlyUserRegistrations?: { month: string; free: number; premium: number; enterprise: number }[];
   dailyUserRegistrations?: { date: string; free: number; premium: number; enterprise: number }[];
   subscriptionStatusStats?: { status: string; count: number }[];
+}
+
+export interface CustomerAnalyticsSummary {
+  dailyActiveUsers: number;
+  monthlyActiveUsers: number;
+  totalUsers: number;
+}
+
+export interface DailyActiveUsersPoint {
+  date: string;
+  activeUsers: number;
+}
+
+export interface CustomerLoginStat {
+  userId: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  loginCount: number;
+  lastLoginAt?: string;
+}
+
+export interface UserLoginSummary {
+  loginCount: number;
+  lastLoginAt?: string;
+}
+
+export interface LoginEvent {
+  loggedInAt: string;
+  ipAddress?: string;
 }
 
 export interface ReportDocument {

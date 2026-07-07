@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { adminApiClient, Subscription, User } from "@/lib/api";
+import { adminApiClient, LoginEvent, Subscription, User, UserLoginSummary } from "@/lib/api";
 import Link from "next/link";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
@@ -21,7 +21,11 @@ export default function UserDetailPage() {
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [subscriptionsLoading, setSubscriptionsLoading] = useState(false);
   const [subscriptionsError, setSubscriptionsError] = useState<string | null>(null);
-  
+  const [loginSummary, setLoginSummary] = useState<UserLoginSummary | null>(null);
+  const [loginHistory, setLoginHistory] = useState<LoginEvent[]>([]);
+  const [loginHistoryLoading, setLoginHistoryLoading] = useState(false);
+  const [loginHistoryError, setLoginHistoryError] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -33,15 +37,19 @@ export default function UserDetailPage() {
 
   const loadUser = useCallback(async () => {
     if (!userId) return;
-    
+
     setLoading(true);
     setError(null);
     setSubscriptionsLoading(true);
     setSubscriptionsError(null);
+    setLoginHistoryLoading(true);
+    setLoginHistoryError(null);
     try {
-      const [userData, userSubscriptions] = await Promise.all([
+      const [userData, userSubscriptions, loginSummaryData, loginHistoryData] = await Promise.all([
         adminApiClient.getUserById(userId),
         adminApiClient.getUserSubscriptions(userId),
+        adminApiClient.getUserLoginSummary(userId),
+        adminApiClient.getUserLoginHistory(userId, 0, 10),
       ]);
       setUser(userData);
       setFormData({
@@ -53,6 +61,8 @@ export default function UserDetailPage() {
         emailVerified: userData.emailVerified || false,
       });
       setSubscriptions(userSubscriptions || []);
+      setLoginSummary(loginSummaryData);
+      setLoginHistory(loginHistoryData.content || []);
     } catch (error: any) {
       console.error("Error loading user:", error);
       setError(error.message || "Failed to load user");
@@ -60,8 +70,10 @@ export default function UserDetailPage() {
         router.push('/login');
       }
       setSubscriptionsError(error.message || "Failed to load subscriptions");
+      setLoginHistoryError(error.message || "Failed to load login history");
     } finally {
       setLoading(false);
+      setLoginHistoryLoading(false);
       setSubscriptionsLoading(false);
     }
   }, [userId, router]);
@@ -378,6 +390,51 @@ export default function UserDetailPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Login Activity</h2>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              {loginSummary
+                ? `${loginSummary.loginCount} total login${loginSummary.loginCount === 1 ? "" : "s"} · Last login: ${
+                    loginSummary.lastLoginAt
+                      ? new Date(loginSummary.lastLoginAt).toLocaleString()
+                      : "Never"
+                  }`
+                : "Login count and history for this user."}
+            </p>
+          </div>
+        </div>
+
+        {loginHistoryLoading ? (
+          <div className="mt-4 text-sm text-gray-500">Loading login history...</div>
+        ) : loginHistoryError ? (
+          <div className="mt-4 text-sm text-red-600">{loginHistoryError}</div>
+        ) : loginHistory.length === 0 ? (
+          <div className="mt-4 text-sm text-gray-500">No logins recorded yet.</div>
+        ) : (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left text-gray-500 dark:text-gray-400">
+                <tr>
+                  <th className="pb-3">Logged In At</th>
+                  <th className="pb-3">IP Address</th>
+                </tr>
+              </thead>
+              <tbody className="text-gray-800 dark:text-white/90">
+                {loginHistory.map((event, index) => (
+                  <tr key={`${event.loggedInAt}-${index}`} className="border-t border-gray-100 dark:border-gray-800">
+                    <td className="py-3">{new Date(event.loggedInAt).toLocaleString()}</td>
+                    <td className="py-3">{event.ipAddress || "-"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">Showing the 10 most recent logins.</p>
           </div>
         )}
       </div>
