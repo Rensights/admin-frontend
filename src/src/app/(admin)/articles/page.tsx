@@ -36,7 +36,7 @@ export default function ArticlesAdminPage() {
       setArticles(list);
       setEnabled(settings.enabled);
     } catch (err: any) {
-      setError(err.message || "Failed to load articles");
+      setError(err.message || "Failed to load insights");
       if (err.message?.includes("401") || err.message?.includes("Unauthorized")) {
         router.push("/login");
       }
@@ -138,7 +138,7 @@ export default function ArticlesAdminPage() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
-          <p className="mt-4 text-gray-500">Loading articles...</p>
+          <p className="mt-4 text-gray-500">Loading insights...</p>
         </div>
       </div>
     );
@@ -148,9 +148,9 @@ export default function ArticlesAdminPage() {
     <div>
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Articles</h1>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Insights</h1>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            Manage public articles and toggle visibility
+            Manage public insights and toggle visibility
           </p>
         </div>
         <button
@@ -158,7 +158,7 @@ export default function ArticlesAdminPage() {
           className="px-4 py-2 rounded-lg text-white transition-colors"
           style={{ background: enabled ? "#16a34a" : "#ef4444" }}
         >
-          {enabled ? "Articles Enabled" : "Articles Disabled"}
+          {enabled ? "Insights Enabled" : "Insights Disabled"}
         </button>
       </div>
 
@@ -311,7 +311,7 @@ export default function ArticlesAdminPage() {
               {sortedArticles.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-                    No articles found
+                    No insights found
                   </td>
                 </tr>
               ) : (

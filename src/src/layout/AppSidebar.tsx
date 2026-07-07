@@ -54,7 +54,7 @@ const navItems: NavItem[] = [
   },
   {
     icon: <DocsIcon />,
-    name: "Articles",
+    name: "Insights",
     path: "/articles",
   },
   {
