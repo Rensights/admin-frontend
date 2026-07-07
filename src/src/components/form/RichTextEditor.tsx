@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useMemo } from "react";
 import "react-quill-new/dist/quill.snow.css";
+import { adminApiClient } from "@/lib/api";
 
 // Quill touches `document` on import, so it must never run during SSR.
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
@@ -12,15 +13,6 @@ type RichTextEditorProps = {
   onChange: (value: string) => void;
   placeholder?: string;
 };
-
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result || ""));
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
 
 export default function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
   const modules = useMemo(
@@ -37,7 +29,8 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
         ],
         handlers: {
           // Default Quill image button only accepts a URL - this lets editors
-          // upload a local file too, embedded the same way the cover image is.
+          // upload a local file instead. Uploaded as a real file (not base64)
+          // so article payloads stay small and fast to save/load.
           image: function (this: { quill: any }) {
             const input = document.createElement("input");
             input.setAttribute("type", "file");
@@ -46,10 +39,14 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             input.onchange = async () => {
               const file = input.files?.[0];
               if (!file) return;
-              const dataUrl = await readFileAsDataUrl(file);
               const range = this.quill.getSelection(true);
-              this.quill.insertEmbed(range.index, "image", dataUrl, "user");
-              this.quill.setSelection(range.index + 1, 0);
+              try {
+                const url = await adminApiClient.uploadArticleImage(file);
+                this.quill.insertEmbed(range.index, "image", url, "user");
+                this.quill.setSelection(range.index + 1, 0);
+              } catch (err) {
+                console.error("Failed to upload image:", err);
+              }
             };
           },
         },

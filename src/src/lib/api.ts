@@ -453,6 +453,18 @@ class AdminApiClient {
     return Array.isArray(list) ? list.map((item) => this.normalizeArticle(item)) : [];
   }
 
+  async uploadArticleImage(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append("file", file);
+    const result = await this.request<{ filename: string }>(`/api/admin/articles/upload-image`, {
+      method: "POST",
+      body: formData,
+    });
+    // Images are served publicly from app-backend (MAIN_BACKEND_URL), not from
+    // this admin API, since the public site loads them directly.
+    return `${MAIN_BACKEND_URL}/api/articles/images/${result.filename}`;
+  }
+
   async createArticle(payload: Partial<Article>): Promise<Article> {
     const created = await this.request<any>(`/api/admin/articles/create`, {
       method: "POST",

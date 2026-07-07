@@ -26,6 +26,7 @@ export default function ArticlesAdminPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [form, setForm] = useState<Partial<Article>>(emptyForm);
   const [contentMode, setContentMode] = useState<"rich" | "html">("rich");
+  const [coverImageUploading, setCoverImageUploading] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -203,22 +204,24 @@ export default function ArticlesAdminPage() {
               <input
                 type="file"
                 accept="image/*"
+                disabled={coverImageUploading}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                onChange={(e) => {
+                onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
-                  const reader = new FileReader();
-                  reader.onload = () => {
-                    const result = String(reader.result || "");
-                    if (result) {
-                      setForm({ ...form, coverImage: result });
-                    }
-                  };
-                  reader.readAsDataURL(file);
+                  setCoverImageUploading(true);
+                  try {
+                    const url = await adminApiClient.uploadArticleImage(file);
+                    setForm((prev) => ({ ...prev, coverImage: url }));
+                  } catch (err: any) {
+                    setError(err.message || "Failed to upload cover image");
+                  } finally {
+                    setCoverImageUploading(false);
+                  }
                 }}
               />
               <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                Upload an image. It will be saved in the database.
+                {coverImageUploading ? "Uploading..." : "Upload an image."}
               </p>
             </div>
             {form.coverImage && (
