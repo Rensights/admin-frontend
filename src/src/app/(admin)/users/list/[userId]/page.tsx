@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { adminApiClient, LoginEvent, Subscription, User, UserLoginSummary } from "@/lib/api";
+import { adminApiClient, ActivityTimelineItem, Subscription, User, UserLoginSummary } from "@/lib/api";
 import Link from "next/link";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
@@ -22,7 +22,7 @@ export default function UserDetailPage() {
   const [subscriptionsLoading, setSubscriptionsLoading] = useState(false);
   const [subscriptionsError, setSubscriptionsError] = useState<string | null>(null);
   const [loginSummary, setLoginSummary] = useState<UserLoginSummary | null>(null);
-  const [loginHistory, setLoginHistory] = useState<LoginEvent[]>([]);
+  const [activityTimeline, setActivityTimeline] = useState<ActivityTimelineItem[]>([]);
   const [loginHistoryLoading, setLoginHistoryLoading] = useState(false);
   const [loginHistoryError, setLoginHistoryError] = useState<string | null>(null);
 
@@ -45,11 +45,11 @@ export default function UserDetailPage() {
     setLoginHistoryLoading(true);
     setLoginHistoryError(null);
     try {
-      const [userData, userSubscriptions, loginSummaryData, loginHistoryData] = await Promise.all([
+      const [userData, userSubscriptions, loginSummaryData, timelineData] = await Promise.all([
         adminApiClient.getUserById(userId),
         adminApiClient.getUserSubscriptions(userId),
         adminApiClient.getUserLoginSummary(userId),
-        adminApiClient.getUserLoginHistory(userId, 0, 10),
+        adminApiClient.getUserActivityTimeline(userId, 0, 20),
       ]);
       setUser(userData);
       setFormData({
@@ -62,7 +62,7 @@ export default function UserDetailPage() {
       });
       setSubscriptions(userSubscriptions || []);
       setLoginSummary(loginSummaryData);
-      setLoginHistory(loginHistoryData.content || []);
+      setActivityTimeline(timelineData.content || []);
     } catch (error: any) {
       console.error("Error loading user:", error);
       setError(error.message || "Failed to load user");
@@ -397,7 +397,7 @@ export default function UserDetailPage() {
       <div className="mt-6 rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Login Activity</h2>
+            <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Activity Timeline</h2>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
               {loginSummary
                 ? `${loginSummary.loginCount} total login${loginSummary.loginCount === 1 ? "" : "s"} · Last login: ${
@@ -405,36 +405,50 @@ export default function UserDetailPage() {
                       ? new Date(loginSummary.lastLoginAt).toLocaleString()
                       : "Never"
                   }`
-                : "Login count and history for this user."}
+                : "Logins, page views, and key actions for this user."}
             </p>
           </div>
         </div>
 
         {loginHistoryLoading ? (
-          <div className="mt-4 text-sm text-gray-500">Loading login history...</div>
+          <div className="mt-4 text-sm text-gray-500">Loading activity...</div>
         ) : loginHistoryError ? (
           <div className="mt-4 text-sm text-red-600">{loginHistoryError}</div>
-        ) : loginHistory.length === 0 ? (
-          <div className="mt-4 text-sm text-gray-500">No logins recorded yet.</div>
+        ) : activityTimeline.length === 0 ? (
+          <div className="mt-4 text-sm text-gray-500">No activity recorded yet.</div>
         ) : (
           <div className="mt-4 overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="text-left text-gray-500 dark:text-gray-400">
                 <tr>
-                  <th className="pb-3">Logged In At</th>
-                  <th className="pb-3">IP Address</th>
+                  <th className="pb-3">When</th>
+                  <th className="pb-3">Event</th>
+                  <th className="pb-3">Page / Details</th>
                 </tr>
               </thead>
               <tbody className="text-gray-800 dark:text-white/90">
-                {loginHistory.map((event, index) => (
-                  <tr key={`${event.loggedInAt}-${index}`} className="border-t border-gray-100 dark:border-gray-800">
-                    <td className="py-3">{new Date(event.loggedInAt).toLocaleString()}</td>
-                    <td className="py-3">{event.ipAddress || "-"}</td>
+                {activityTimeline.map((item, index) => (
+                  <tr key={`${item.occurredAt}-${index}`} className="border-t border-gray-100 dark:border-gray-800">
+                    <td className="py-3 whitespace-nowrap">{new Date(item.occurredAt).toLocaleString()}</td>
+                    <td className="py-3">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        item.eventType === "LOGIN"
+                          ? "bg-success-50 text-success-600 dark:bg-success-500/15"
+                          : item.eventType === "PAGE_VIEW"
+                          ? "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                          : "bg-brand-100 text-brand-800 dark:bg-brand-500/15 dark:text-brand-400"
+                      }`}>
+                        {item.eventType}
+                      </span>
+                    </td>
+                    <td className="py-3 text-gray-500 dark:text-gray-400">
+                      {item.pagePath || item.metadata || "-"}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">Showing the 10 most recent logins.</p>
+            <p className="mt-3 text-xs text-gray-400 dark:text-gray-500">Showing the 20 most recent activity items.</p>
           </div>
         )}
       </div>

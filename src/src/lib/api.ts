@@ -177,6 +177,20 @@ class AdminApiClient {
     );
   }
 
+  async getPageViewStats(days: number = 30): Promise<PageViewStat[]> {
+    return this.request<PageViewStat[]>(`/api/admin/customer-analytics/page-views?days=${days}`);
+  }
+
+  async getEventTypeBreakdown(days: number = 30): Promise<EventTypeStat[]> {
+    return this.request<EventTypeStat[]>(`/api/admin/customer-analytics/event-breakdown?days=${days}`);
+  }
+
+  async getUserActivityTimeline(userId: string, page: number = 0, size: number = 20): Promise<PaginatedResponse<ActivityTimelineItem>> {
+    return this.request<PaginatedResponse<ActivityTimelineItem>>(
+      `/api/admin/customer-analytics/customers/${userId}/timeline?page=${page}&size=${size}`
+    );
+  }
+
   // Sync all users invoices
   async syncAllUsersInvoices(): Promise<{ message: string; syncedCount: number }> {
     return this.request<{ message: string; syncedCount: number }>('/api/admin/invoices/sync-all', {
@@ -659,6 +673,24 @@ export interface CustomerAnalyticsSummary {
   dailyActiveUsers: number;
   monthlyActiveUsers: number;
   totalUsers: number;
+  activeNow: number;
+}
+
+export interface PageViewStat {
+  pagePath: string;
+  viewCount: number;
+}
+
+export interface EventTypeStat {
+  eventType: string;
+  eventCount: number;
+}
+
+export interface ActivityTimelineItem {
+  eventType: string;
+  pagePath?: string;
+  metadata?: string;
+  occurredAt: string;
 }
 
 export interface DailyActiveUsersPoint {

@@ -7,14 +7,20 @@ import {
   CustomerAnalyticsSummary,
   DailyActiveUsersPoint,
   CustomerLoginStat,
+  PageViewStat,
+  EventTypeStat,
 } from "@/lib/api";
 import DailyActiveUsersChart from "@/components/ecommerce/DailyActiveUsersChart";
-import { BoltIcon, CalenderIcon, GroupIcon } from "@/icons";
+import { BoltIcon, CalenderIcon, GroupIcon, ListIcon } from "@/icons";
+
+const ACTIVE_NOW_REFRESH_MS = 30_000;
 
 export default function CustomerAnalyticsPage() {
   const [summary, setSummary] = useState<CustomerAnalyticsSummary | null>(null);
   const [trend, setTrend] = useState<DailyActiveUsersPoint[]>([]);
   const [customers, setCustomers] = useState<CustomerLoginStat[]>([]);
+  const [pageViews, setPageViews] = useState<PageViewStat[]>([]);
+  const [eventBreakdown, setEventBreakdown] = useState<EventTypeStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
@@ -24,15 +30,19 @@ export default function CustomerAnalyticsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [summaryData, trendData, customersData] = await Promise.all([
+      const [summaryData, trendData, customersData, pageViewData, eventData] = await Promise.all([
         adminApiClient.getCustomerAnalyticsSummary(),
         adminApiClient.getCustomerAnalyticsTrend(30),
         adminApiClient.getCustomerLoginStats(currentPage, 20),
+        adminApiClient.getPageViewStats(30),
+        adminApiClient.getEventTypeBreakdown(30),
       ]);
       setSummary(summaryData);
       setTrend(trendData);
       setCustomers(customersData.content);
       setTotalPages(customersData.totalPages || 1);
+      setPageViews(pageViewData);
+      setEventBreakdown(eventData);
     } catch (err: any) {
       setError(err.message || "Failed to load customer analytics");
     } finally {
@@ -43,6 +53,15 @@ export default function CustomerAnalyticsPage() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // "Active Right Now" is time-sensitive (strict 5-min window), so refresh it
+  // independently on a short interval without reloading the whole page.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      adminApiClient.getCustomerAnalyticsSummary().then(setSummary).catch(() => {});
+    }, ACTIVE_NOW_REFRESH_MS);
+    return () => clearInterval(interval);
+  }, []);
 
   if (loading && !summary) {
     return (
@@ -70,7 +89,19 @@ export default function CustomerAnalyticsPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 md:gap-6 mb-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4 md:gap-6 mb-6">
+        <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
+          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-success-50 dark:bg-success-500/15">
+            <BoltIcon className="text-success-600 size-6 dark:text-success-400" />
+          </div>
+          <div className="mt-5">
+            <span className="text-sm text-gray-500 dark:text-gray-400">Active Right Now</span>
+            <h4 className="mt-2 font-bold text-gray-800 text-title-sm dark:text-white/90">
+              {(summary?.activeNow ?? 0).toLocaleString()}
+            </h4>
+            <span className="text-xs text-gray-400 dark:text-gray-500">Heartbeat in last 5 min</span>
+          </div>
+        </div>
         <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03] md:p-6">
           <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-brand-100 dark:bg-brand-500/20">
             <BoltIcon className="text-brand-600 size-6 dark:text-brand-400" />
@@ -110,6 +141,53 @@ export default function CustomerAnalyticsPage() {
 
       <div className="mb-6">
         <DailyActiveUsersChart data={trend} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:gap-6 mb-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
+            <ListIcon className="size-5 text-gray-500 dark:text-gray-400" />
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Most Viewed Pages</h3>
+          </div>
+          <div className="p-6">
+            {pageViews.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">No page views recorded yet.</p>
+            ) : (
+              <ul className="space-y-3">
+                {pageViews.map((pv) => (
+                  <li key={pv.pagePath} className="flex items-center justify-between text-sm">
+                    <span className="text-gray-700 dark:text-gray-300 truncate mr-4">{pv.pagePath}</span>
+                    <span className="font-medium text-gray-800 dark:text-white/90 whitespace-nowrap">
+                      {pv.viewCount.toLocaleString()} views
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Activity Breakdown</h3>
+          </div>
+          <div className="p-6">
+            {eventBreakdown.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400">No activity recorded yet.</p>
+            ) : (
+              <ul className="space-y-3">
+                {eventBreakdown.map((ev) => (
+                  <li key={ev.eventType} className="flex items-center justify-between text-sm">
+                    <span className="text-gray-700 dark:text-gray-300">{ev.eventType}</span>
+                    <span className="font-medium text-gray-800 dark:text-white/90">
+                      {ev.eventCount.toLocaleString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
