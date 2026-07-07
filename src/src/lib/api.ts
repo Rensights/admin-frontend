@@ -9,6 +9,11 @@ const createTraceId = (): string => {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 const MAIN_BACKEND_URL = process.env.NEXT_PUBLIC_MAIN_BACKEND_URL || '';
+// Public site domain - article images are viewed on the public site, so they
+// must be served from here (same-origin /api/* on rensights.com), not from
+// MAIN_BACKEND_URL, which can point at a different internal API host per
+// environment and isn't guaranteed to have a matching TLS cert.
+const PUBLIC_SITE_URL = 'https://rensights.com';
 
 class AdminApiClient {
   private async request<T>(
@@ -460,9 +465,9 @@ class AdminApiClient {
       method: "POST",
       body: formData,
     });
-    // Images are served publicly from app-backend (MAIN_BACKEND_URL), not from
-    // this admin API, since the public site loads them directly.
-    return `${MAIN_BACKEND_URL}/api/articles/images/${result.filename}`;
+    // Images are viewed on the public site, so they must be served from
+    // rensights.com, not from this admin API.
+    return `${PUBLIC_SITE_URL}/api/articles/images/${result.filename}`;
   }
 
   async createArticle(payload: Partial<Article>): Promise<Article> {
