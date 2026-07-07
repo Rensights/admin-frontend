@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { adminApiClient, Article } from "@/lib/api";
+import RichTextEditor from "@/components/form/RichTextEditor";
 
 const emptyForm: Partial<Article> = {
   title: "",
@@ -24,6 +25,7 @@ export default function ArticlesAdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [form, setForm] = useState<Partial<Article>>(emptyForm);
+  const [contentMode, setContentMode] = useState<"rich" | "html">("rich");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -255,15 +257,36 @@ export default function ArticlesAdminPage() {
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Content
-              </label>
-              <textarea
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                rows={8}
-                value={form.content || ""}
-                onChange={(e) => setForm({ ...form, content: e.target.value })}
-              />
+              <div className="mb-1 flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Content
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setContentMode(contentMode === "rich" ? "html" : "rich")}
+                  className="text-xs font-medium text-brand-500 hover:text-brand-600"
+                >
+                  {contentMode === "rich" ? "Edit raw HTML" : "Back to rich text"}
+                </button>
+              </div>
+              {contentMode === "rich" ? (
+                <RichTextEditor
+                  value={form.content || ""}
+                  onChange={(html) => setForm({ ...form, content: html })}
+                  placeholder="Write the article content..."
+                />
+              ) : (
+                <textarea
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg font-mono text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  rows={12}
+                  value={form.content || ""}
+                  onChange={(e) => setForm({ ...form, content: e.target.value })}
+                />
+              )}
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Use the rich text toolbar for standard formatting and images, or switch to raw
+                HTML for full control over layout/design.
+              </p>
             </div>
           </div>
           <div className="mt-4 flex gap-2">
