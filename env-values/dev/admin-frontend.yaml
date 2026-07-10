@@ -35,11 +35,10 @@ networkPolicy:
   kongNamespaceLabels:
     name: kong
 
-extraEnv:
-  # Admin API URL (admin-backend)
-  NEXT_PUBLIC_API_URL: "http://dev-admin-api.72.62.40.154.nip.io:31416"
-  # Main backend URL (for shared resources)
-  NEXT_PUBLIC_MAIN_BACKEND_URL: "http://dev-api.72.62.40.154.nip.io:31416"
+# NEXT_PUBLIC_API_URL / NEXT_PUBLIC_MAIN_BACKEND_URL now come from the
+# Portainer-managed `admin-frontend-config` Secret (the chart falls back to
+# secretKeyRef when these keys are absent from extraEnv).
+extraEnv: {}
 
 
 
