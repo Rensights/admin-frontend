@@ -211,38 +211,11 @@ jobs:
             --namespace ${DEV_NAMESPACE} \
             --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Setup admin-frontend-config secret for dev
-        id: admin-frontend-config
-        run: |
-          export KUBECONFIG=/tmp/kubeconfig
-          ADMIN_BACKEND_URL="http://dev-admin-api.72.62.40.154.nip.io:31416"
-          MAIN_BACKEND_URL="http://dev-api.72.62.40.154.nip.io:31416"
-          
-          if kubectl get ingress admin-backend -n ${DEV_NAMESPACE} &>/dev/null; then
-            BACKEND_HOST=$(kubectl get ingress admin-backend -n ${DEV_NAMESPACE} -o jsonpath='{.spec.rules[0].host}' 2>/dev/null || echo "")
-            [ -n "$BACKEND_HOST" ] && ADMIN_BACKEND_URL="http://${BACKEND_HOST}:31416"
-          fi
-          
-          if kubectl get ingress backend -n ${DEV_NAMESPACE} &>/dev/null; then
-            BACKEND_HOST=$(kubectl get ingress backend -n ${DEV_NAMESPACE} -o jsonpath='{.spec.rules[0].host}' 2>/dev/null || echo "")
-            [ -n "$BACKEND_HOST" ] && MAIN_BACKEND_URL="http://${BACKEND_HOST}:31416"
-          fi
-          
-          echo "admin_api_url=${ADMIN_BACKEND_URL}" >> $GITHUB_OUTPUT
-          echo "main_backend_url=${MAIN_BACKEND_URL}" >> $GITHUB_OUTPUT
-          kubectl create secret generic admin-frontend-config \
-            --from-literal=NEXT_PUBLIC_API_URL="$ADMIN_BACKEND_URL" \
-            --from-literal=NEXT_PUBLIC_MAIN_BACKEND_URL="$MAIN_BACKEND_URL" \
-            --namespace ${DEV_NAMESPACE} \
-            --dry-run=client -o yaml | kubectl apply -f -
-
       - name: Deploy admin-frontend to dev
         run: |
           export KUBECONFIG=/tmp/kubeconfig
           IMAGE_TAG="${{ needs.build.outputs.image_tag }}"
-          ADMIN_API_URL="${{ steps.admin-frontend-config.outputs.admin_api_url }}"
-          MAIN_BACKEND_URL="${{ steps.admin-frontend-config.outputs.main_backend_url }}"
-          
+
           # Check for stuck Helm releases
           if helm list -n ${DEV_NAMESPACE} -q | grep -q "^admin-frontend$"; then
             STATUS=$(helm status admin-frontend -n ${DEV_NAMESPACE} -o json 2>/dev/null | jq -r '.info.status' 2>/dev/null || echo "unknown")
@@ -266,12 +239,13 @@ jobs:
             [ "$HELM_MANAGED" != "Helm" ] && DISABLE_NP="true"
           fi
           
+          # NEXT_PUBLIC_API_URL / NEXT_PUBLIC_MAIN_BACKEND_URL are read from the
+          # Portainer-managed `admin-frontend-config` Secret (the chart falls back to
+          # secretKeyRef when they are absent from extraEnv).
           if [ "$DISABLE_NP" = "true" ]; then
-            printf 'extraEnv:\n  NEXT_PUBLIC_API_URL: "%s"\n  NEXT_PUBLIC_MAIN_BACKEND_URL: "%s"\nnetworkPolicy:\n  enabled: false\n' \
-              "${ADMIN_API_URL}" "${MAIN_BACKEND_URL}" > /tmp/extra-env-values.yaml
+            printf 'networkPolicy:\n  enabled: false\n' > /tmp/extra-env-values.yaml
           else
-            printf 'extraEnv:\n  NEXT_PUBLIC_API_URL: "%s"\n  NEXT_PUBLIC_MAIN_BACKEND_URL: "%s"\n' \
-              "${ADMIN_API_URL}" "${MAIN_BACKEND_URL}" > /tmp/extra-env-values.yaml
+            printf '{}\n' > /tmp/extra-env-values.yaml
           fi
           
           helm upgrade --install admin-frontend ./charts \
