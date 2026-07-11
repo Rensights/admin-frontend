@@ -264,12 +264,12 @@ export default function ArticlesAdminPage() {
             {form.coverImage && (
               <div className="md:col-span-2">
                 <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Preview</p>
-                <div className="w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
+                <div className="aspect-video w-full overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={form.coverImage}
                     alt="Cover preview"
-                    className="aspect-video w-full object-cover"
+                    className="h-full w-full object-contain"
                   />
                 </div>
               </div>
