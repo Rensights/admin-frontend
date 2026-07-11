@@ -240,8 +240,8 @@ jobs:
           fi
           
           # NEXT_PUBLIC_API_URL / NEXT_PUBLIC_MAIN_BACKEND_URL are read from the
-          # Portainer-managed `admin-frontend-config` Secret (the chart falls back to
-          # secretKeyRef when they are absent from extraEnv).
+          # Portainer-managed `dev-shared-config` Secret (keys ADMIN_API_URL /
+          # ADMIN_MAIN_BACKEND_URL), wired by the chart via secretKeyRef.
           if [ "$DISABLE_NP" = "true" ]; then
             printf 'networkPolicy:\n  enabled: false\n' > /tmp/extra-env-values.yaml
           else
