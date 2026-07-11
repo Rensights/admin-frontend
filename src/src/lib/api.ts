@@ -177,6 +177,37 @@ class AdminApiClient {
     );
   }
 
+  async getMonthlyActiveTrend(months: number = 12): Promise<MonthlyActiveUsersPoint[]> {
+    return this.request<MonthlyActiveUsersPoint[]>(
+      `/api/admin/customer-analytics/trend/monthly-active?months=${months}`
+    );
+  }
+
+  async getCustomerGrowthTrend(months: number = 12): Promise<CustomerGrowthPoint[]> {
+    return this.request<CustomerGrowthPoint[]>(
+      `/api/admin/customer-analytics/trend/customer-growth?months=${months}`
+    );
+  }
+
+  // Full per-customer login stats (all users) streamed as a CSV download.
+  async downloadCustomerLoginStatsCsv(): Promise<void> {
+    const res = await fetch(`${API_URL}/api/admin/customer-analytics/customers/export`, {
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to download export (status ${res.status})`);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `customer-login-stats-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   async getPageViewStats(days: number = 30): Promise<PageViewStat[]> {
     return this.request<PageViewStat[]>(`/api/admin/customer-analytics/page-views?days=${days}`);
   }
@@ -696,6 +727,17 @@ export interface ActivityTimelineItem {
 export interface DailyActiveUsersPoint {
   date: string;
   activeUsers: number;
+}
+
+export interface MonthlyActiveUsersPoint {
+  month: string; // "YYYY-MM"
+  activeUsers: number;
+}
+
+export interface CustomerGrowthPoint {
+  month: string; // "YYYY-MM"
+  newCustomers: number;
+  cumulativeCustomers: number;
 }
 
 export interface CustomerLoginStat {

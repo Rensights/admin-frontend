@@ -1,68 +1,47 @@
 "use client";
 import { ApexOptions } from "apexcharts";
 import dynamic from "next/dynamic";
+import { MonthlyActiveUsersPoint } from "@/lib/api";
 import { downloadCsv } from "@/lib/csv";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
 });
 
-interface DailyActiveUsersChartProps {
-  data: { date: string; activeUsers: number }[];
+function formatMonth(m: string): string {
+  const [y, mo] = m.split("-");
+  const d = new Date(Number(y), Number(mo) - 1, 1);
+  return `${d.toLocaleString("en", { month: "short" })} ${y.slice(2)}`;
 }
 
-export default function DailyActiveUsersChart({ data }: DailyActiveUsersChartProps) {
-  const categories = data.map((point) => {
-    const date = new Date(point.date);
-    return `${date.getDate()}/${date.getMonth() + 1}`;
-  });
-  const series = [
-    {
-      name: "Active Users",
-      data: data.map((point) => point.activeUsers),
-    },
-  ];
+interface Props {
+  data: MonthlyActiveUsersPoint[];
+}
+
+export default function MonthlyActiveUsersChart({ data }: Props) {
+  const categories = data.map((p) => formatMonth(p.month));
+  const series = [{ name: "Active Users", data: data.map((p) => p.activeUsers) }];
 
   const options: ApexOptions = {
-    colors: ["#465FFF"],
+    colors: ["#12B76A"],
     chart: {
       fontFamily: "Outfit, sans-serif",
-      type: "area",
+      type: "bar",
       height: 300,
       toolbar: { show: false },
     },
-    stroke: {
-      curve: "smooth",
-      width: 2,
-    },
-    fill: {
-      type: "gradient",
-      gradient: {
-        opacityFrom: 0.6,
-        opacityTo: 0.1,
-      },
-    },
-    markers: {
-      size: 0,
-      hover: { size: 5 },
+    plotOptions: {
+      bar: { borderRadius: 4, columnWidth: "45%" },
     },
     xaxis: {
       categories,
       axisBorder: { show: false },
       axisTicks: { show: false },
     },
-    yaxis: {
-      title: { text: "Active Users" },
-    },
-    grid: {
-      yaxis: { lines: { show: true } },
-    },
+    yaxis: { title: { text: "Active Users" } },
+    grid: { yaxis: { lines: { show: true } } },
     dataLabels: { enabled: false },
-    tooltip: {
-      y: {
-        formatter: (val: number) => `${val} active users`,
-      },
-    },
+    tooltip: { y: { formatter: (val: number) => `${val} active users` } },
   };
 
   return (
@@ -70,19 +49,19 @@ export default function DailyActiveUsersChart({ data }: DailyActiveUsersChartPro
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            Daily Active Users
+            Monthly Active Users
           </h3>
           <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
-            Distinct customers who logged in each day
+            Distinct customers who logged in each month
           </p>
         </div>
         <button
           type="button"
           onClick={() =>
             downloadCsv(
-              "daily-active-users",
+              "monthly-active-users",
               [
-                { key: "date", label: "Date" },
+                { key: "month", label: "Month" },
                 { key: "activeUsers", label: "Active Users" },
               ],
               data
@@ -99,7 +78,7 @@ export default function DailyActiveUsersChart({ data }: DailyActiveUsersChartPro
           No login activity yet
         </div>
       ) : (
-        <ReactApexChart options={options} series={series} type="area" height={300} />
+        <ReactApexChart options={options} series={series} type="bar" height={300} />
       )}
     </div>
   );

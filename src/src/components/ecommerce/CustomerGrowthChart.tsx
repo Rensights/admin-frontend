@@ -1,68 +1,51 @@
 "use client";
 import { ApexOptions } from "apexcharts";
 import dynamic from "next/dynamic";
+import { CustomerGrowthPoint } from "@/lib/api";
 import { downloadCsv } from "@/lib/csv";
 
 const ReactApexChart = dynamic(() => import("react-apexcharts"), {
   ssr: false,
 });
 
-interface DailyActiveUsersChartProps {
-  data: { date: string; activeUsers: number }[];
+function formatMonth(m: string): string {
+  const [y, mo] = m.split("-");
+  const d = new Date(Number(y), Number(mo) - 1, 1);
+  return `${d.toLocaleString("en", { month: "short" })} ${y.slice(2)}`;
 }
 
-export default function DailyActiveUsersChart({ data }: DailyActiveUsersChartProps) {
-  const categories = data.map((point) => {
-    const date = new Date(point.date);
-    return `${date.getDate()}/${date.getMonth() + 1}`;
-  });
+interface Props {
+  data: CustomerGrowthPoint[];
+}
+
+export default function CustomerGrowthChart({ data }: Props) {
+  const categories = data.map((p) => formatMonth(p.month));
   const series = [
-    {
-      name: "Active Users",
-      data: data.map((point) => point.activeUsers),
-    },
+    { name: "Total Customers", type: "line", data: data.map((p) => p.cumulativeCustomers) },
+    { name: "New Customers", type: "column", data: data.map((p) => p.newCustomers) },
   ];
 
   const options: ApexOptions = {
-    colors: ["#465FFF"],
+    colors: ["#465FFF", "#9CB9FF"],
     chart: {
       fontFamily: "Outfit, sans-serif",
-      type: "area",
+      type: "line",
       height: 300,
       toolbar: { show: false },
     },
-    stroke: {
-      curve: "smooth",
-      width: 2,
-    },
-    fill: {
-      type: "gradient",
-      gradient: {
-        opacityFrom: 0.6,
-        opacityTo: 0.1,
-      },
-    },
-    markers: {
-      size: 0,
-      hover: { size: 5 },
-    },
+    stroke: { curve: "smooth", width: [3, 0] },
+    plotOptions: { bar: { borderRadius: 4, columnWidth: "40%" } },
+    markers: { size: 0, hover: { size: 5 } },
     xaxis: {
       categories,
       axisBorder: { show: false },
       axisTicks: { show: false },
     },
-    yaxis: {
-      title: { text: "Active Users" },
-    },
-    grid: {
-      yaxis: { lines: { show: true } },
-    },
+    yaxis: { title: { text: "Customers" } },
+    grid: { yaxis: { lines: { show: true } } },
     dataLabels: { enabled: false },
-    tooltip: {
-      y: {
-        formatter: (val: number) => `${val} active users`,
-      },
-    },
+    legend: { show: true, position: "top" },
+    tooltip: { shared: true, intersect: false },
   };
 
   return (
@@ -70,20 +53,21 @@ export default function DailyActiveUsersChart({ data }: DailyActiveUsersChartPro
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">
-            Daily Active Users
+            Total Customers
           </h3>
           <p className="mt-1 text-gray-500 text-theme-sm dark:text-gray-400">
-            Distinct customers who logged in each day
+            Cumulative customer base with new signups per month
           </p>
         </div>
         <button
           type="button"
           onClick={() =>
             downloadCsv(
-              "daily-active-users",
+              "customer-growth",
               [
-                { key: "date", label: "Date" },
-                { key: "activeUsers", label: "Active Users" },
+                { key: "month", label: "Month" },
+                { key: "newCustomers", label: "New Customers" },
+                { key: "cumulativeCustomers", label: "Total Customers" },
               ],
               data
             )
@@ -96,10 +80,10 @@ export default function DailyActiveUsersChart({ data }: DailyActiveUsersChartPro
       </div>
       {data.length === 0 ? (
         <div className="flex h-[300px] items-center justify-center text-gray-400 dark:text-gray-500">
-          No login activity yet
+          No customers yet
         </div>
       ) : (
-        <ReactApexChart options={options} series={series} type="area" height={300} />
+        <ReactApexChart options={options} series={series} type="line" height={300} />
       )}
     </div>
   );

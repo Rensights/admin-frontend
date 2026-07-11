@@ -6,19 +6,30 @@ import {
   adminApiClient,
   CustomerAnalyticsSummary,
   DailyActiveUsersPoint,
+  MonthlyActiveUsersPoint,
+  CustomerGrowthPoint,
   CustomerLoginStat,
   PageViewStat,
   EventTypeStat,
 } from "@/lib/api";
 import DailyActiveUsersChart from "@/components/ecommerce/DailyActiveUsersChart";
+import MonthlyActiveUsersChart from "@/components/ecommerce/MonthlyActiveUsersChart";
+import CustomerGrowthChart from "@/components/ecommerce/CustomerGrowthChart";
+import { downloadCsv } from "@/lib/csv";
 import { BoltIcon, CalenderIcon, GroupIcon, ListIcon } from "@/icons";
+
+const ANALYTICS_WINDOW_DAYS = 30;
+const TREND_MONTHS = 12;
 
 const ACTIVE_NOW_REFRESH_MS = 30_000;
 
 export default function CustomerAnalyticsPage() {
   const [summary, setSummary] = useState<CustomerAnalyticsSummary | null>(null);
   const [trend, setTrend] = useState<DailyActiveUsersPoint[]>([]);
+  const [mauTrend, setMauTrend] = useState<MonthlyActiveUsersPoint[]>([]);
+  const [growthTrend, setGrowthTrend] = useState<CustomerGrowthPoint[]>([]);
   const [customers, setCustomers] = useState<CustomerLoginStat[]>([]);
+  const [exporting, setExporting] = useState(false);
   const [pageViews, setPageViews] = useState<PageViewStat[]>([]);
   const [eventBreakdown, setEventBreakdown] = useState<EventTypeStat[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,15 +41,20 @@ export default function CustomerAnalyticsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [summaryData, trendData, customersData, pageViewData, eventData] = await Promise.all([
-        adminApiClient.getCustomerAnalyticsSummary(),
-        adminApiClient.getCustomerAnalyticsTrend(30),
-        adminApiClient.getCustomerLoginStats(currentPage, 20),
-        adminApiClient.getPageViewStats(30),
-        adminApiClient.getEventTypeBreakdown(30),
-      ]);
+      const [summaryData, trendData, mauData, growthData, customersData, pageViewData, eventData] =
+        await Promise.all([
+          adminApiClient.getCustomerAnalyticsSummary(),
+          adminApiClient.getCustomerAnalyticsTrend(ANALYTICS_WINDOW_DAYS),
+          adminApiClient.getMonthlyActiveTrend(TREND_MONTHS),
+          adminApiClient.getCustomerGrowthTrend(TREND_MONTHS),
+          adminApiClient.getCustomerLoginStats(currentPage, 20),
+          adminApiClient.getPageViewStats(ANALYTICS_WINDOW_DAYS),
+          adminApiClient.getEventTypeBreakdown(ANALYTICS_WINDOW_DAYS),
+        ]);
       setSummary(summaryData);
       setTrend(trendData);
+      setMauTrend(mauData);
+      setGrowthTrend(growthData);
       setCustomers(customersData.content);
       setTotalPages(customersData.totalPages || 1);
       setPageViews(pageViewData);
@@ -49,6 +65,18 @@ export default function CustomerAnalyticsPage() {
       setLoading(false);
     }
   }, [currentPage]);
+
+  const handleExportCustomers = useCallback(async () => {
+    setExporting(true);
+    setError(null);
+    try {
+      await adminApiClient.downloadCustomerLoginStatsCsv();
+    } catch (err: any) {
+      setError(err.message || "Failed to export customers");
+    } finally {
+      setExporting(false);
+    }
+  }, []);
 
   useEffect(() => {
     loadData();
@@ -144,10 +172,37 @@ export default function CustomerAnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:gap-6 mb-6 lg:grid-cols-2">
+        <MonthlyActiveUsersChart data={mauTrend} />
+        <CustomerGrowthChart data={growthTrend} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:gap-6 mb-6 lg:grid-cols-2">
         <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center gap-2">
-            <ListIcon className="size-5 text-gray-500 dark:text-gray-400" />
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Most Viewed Pages</h3>
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <ListIcon className="size-5 text-gray-500 dark:text-gray-400" />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Most Viewed Pages</h3>
+                <p className="text-xs text-gray-400 dark:text-gray-500">Last {ANALYTICS_WINDOW_DAYS} days</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                downloadCsv(
+                  "most-viewed-pages",
+                  [
+                    { key: "pagePath", label: "Page" },
+                    { key: "viewCount", label: "Views" },
+                  ],
+                  pageViews
+                )
+              }
+              disabled={pageViews.length === 0}
+              className="whitespace-nowrap rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              ⬇ CSV
+            </button>
           </div>
           <div className="p-6">
             {pageViews.length === 0 ? (
@@ -168,8 +223,28 @@ export default function CustomerAnalyticsPage() {
         </div>
 
         <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-            <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Activity Breakdown</h3>
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Activity Breakdown</h3>
+              <p className="text-xs text-gray-400 dark:text-gray-500">Last {ANALYTICS_WINDOW_DAYS} days</p>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                downloadCsv(
+                  "activity-breakdown",
+                  [
+                    { key: "eventType", label: "Event Type" },
+                    { key: "eventCount", label: "Count" },
+                  ],
+                  eventBreakdown
+                )
+              }
+              disabled={eventBreakdown.length === 0}
+              className="whitespace-nowrap rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              ⬇ CSV
+            </button>
           </div>
           <div className="p-6">
             {eventBreakdown.length === 0 ? (
@@ -191,8 +266,21 @@ export default function CustomerAnalyticsPage() {
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Customer Login Activity</h3>
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800 dark:text-white/90">Customer Login Activity</h3>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              Table is paged; CSV exports all customers
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleExportCustomers}
+            disabled={exporting}
+            className="whitespace-nowrap rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+          >
+            {exporting ? "Exporting…" : "⬇ CSV (all customers)"}
+          </button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
