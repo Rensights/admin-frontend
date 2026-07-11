@@ -51,24 +51,24 @@ spec:
             {{- if hasKey .Values.extraEnv "NEXT_PUBLIC_API_URL" }}
             - name: NEXT_PUBLIC_API_URL
               value: {{ index .Values.extraEnv "NEXT_PUBLIC_API_URL" | quote }}
-            {{- else if .Values.secrets.frontendConfig }}
+            {{- else if .Values.secrets.sharedConfig }}
             - name: NEXT_PUBLIC_API_URL
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secrets.frontendConfig }}
-                  key: NEXT_PUBLIC_API_URL
+                  name: {{ .Values.secrets.sharedConfig }}
+                  key: ADMIN_API_URL
                   optional: true
             {{- end }}
             {{- /* Set NEXT_PUBLIC_MAIN_BACKEND_URL: prefer extraEnv, fallback to secret */}}
             {{- if hasKey .Values.extraEnv "NEXT_PUBLIC_MAIN_BACKEND_URL" }}
             - name: NEXT_PUBLIC_MAIN_BACKEND_URL
               value: {{ index .Values.extraEnv "NEXT_PUBLIC_MAIN_BACKEND_URL" | quote }}
-            {{- else if .Values.secrets.frontendConfig }}
+            {{- else if .Values.secrets.sharedConfig }}
             - name: NEXT_PUBLIC_MAIN_BACKEND_URL
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secrets.frontendConfig }}
-                  key: NEXT_PUBLIC_MAIN_BACKEND_URL
+                  name: {{ .Values.secrets.sharedConfig }}
+                  key: ADMIN_MAIN_BACKEND_URL
                   optional: true
             {{- end }}
             {{- /* Add all other extraEnv variables (excluding the ones we already handled) */}}

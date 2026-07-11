@@ -51,9 +51,9 @@ readinessProbe:
 extraEnv: {}
 
 secrets:
-  # Secret name containing frontend configuration
-  # Expected keys: NEXT_PUBLIC_API_URL, NEXT_PUBLIC_MAIN_BACKEND_URL
-  frontendConfig: admin-frontend-config
+  # Single secret holding ALL app config for every app. Managed in Portainer.
+  # Admin frontend reads: ADMIN_API_URL, ADMIN_MAIN_BACKEND_URL.
+  sharedConfig: dev-shared-config
 
 serviceAccount:
   create: true
