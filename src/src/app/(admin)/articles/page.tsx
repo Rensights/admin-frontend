@@ -207,8 +207,43 @@ export default function ArticlesAdminPage() {
                 disabled={coverImageUploading}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 onChange={async (e) => {
-                  const file = e.target.files?.[0];
+                  const input = e.target;
+                  const file = input.files?.[0];
                   if (!file) return;
+                  setError("");
+
+                  // Enforce a 16:9 landscape cover (recommended 1600 × 900 px) so
+                  // article cards and the hero render consistently.
+                  const size = await new Promise<{ w: number; h: number } | null>(
+                    (resolve) => {
+                      const objectUrl = URL.createObjectURL(file);
+                      const img = new window.Image();
+                      img.onload = () => {
+                        URL.revokeObjectURL(objectUrl);
+                        resolve({ w: img.naturalWidth, h: img.naturalHeight });
+                      };
+                      img.onerror = () => {
+                        URL.revokeObjectURL(objectUrl);
+                        resolve(null);
+                      };
+                      img.src = objectUrl;
+                    }
+                  );
+                  if (!size) {
+                    setError("Could not read the selected image.");
+                    input.value = "";
+                    return;
+                  }
+                  // Allow any 16:9 resolution (1600×900, 1920×1080, …) within ~2%.
+                  const ratio = size.w / size.h;
+                  if (Math.abs(ratio - 16 / 9) > 0.02) {
+                    setError(
+                      `Cover image must be 16:9 landscape (recommended 1600 × 900 px). Selected image is ${size.w} × ${size.h}.`
+                    );
+                    input.value = "";
+                    return;
+                  }
+
                   setCoverImageUploading(true);
                   try {
                     const url = await adminApiClient.uploadArticleImage(file);
@@ -221,7 +256,9 @@ export default function ArticlesAdminPage() {
                 }}
               />
               <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                {coverImageUploading ? "Uploading..." : "Upload an image."}
+                {coverImageUploading
+                  ? "Uploading..."
+                  : "Upload a 1600 × 900 px image (16:9 landscape)."}
               </p>
             </div>
             {form.coverImage && (
@@ -232,7 +269,7 @@ export default function ArticlesAdminPage() {
                   <img
                     src={form.coverImage}
                     alt="Cover preview"
-                    className="h-48 w-full object-cover"
+                    className="aspect-video w-full object-cover"
                   />
                 </div>
               </div>
