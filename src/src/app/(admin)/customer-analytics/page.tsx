@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   adminApiClient,
@@ -9,6 +9,7 @@ import {
   MonthlyActiveUsersPoint,
   CustomerGrowthPoint,
   CustomerLoginStat,
+  LoginEvent,
   PageViewStat,
   EventTypeStat,
 } from "@/lib/api";
@@ -20,6 +21,7 @@ import { BoltIcon, CalenderIcon, GroupIcon, ListIcon } from "@/icons";
 
 const ANALYTICS_WINDOW_DAYS = 30;
 const TREND_MONTHS = 12;
+const HISTORY_PAGE_SIZE = 50;
 
 const ACTIVE_NOW_REFRESH_MS = 30_000;
 
@@ -30,12 +32,54 @@ export default function CustomerAnalyticsPage() {
   const [growthTrend, setGrowthTrend] = useState<CustomerGrowthPoint[]>([]);
   const [customers, setCustomers] = useState<CustomerLoginStat[]>([]);
   const [exporting, setExporting] = useState(false);
+  // Per-user full login history (loaded on demand when a row is expanded).
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [historyByUser, setHistoryByUser] = useState<Record<string, LoginEvent[]>>({});
+  const [historyPage, setHistoryPage] = useState<Record<string, number>>({});
+  const [historyTotalPages, setHistoryTotalPages] = useState<Record<string, number>>({});
+  const [historyLoadingUser, setHistoryLoadingUser] = useState<string | null>(null);
+  const [historyErrorByUser, setHistoryErrorByUser] = useState<Record<string, string | null>>({});
   const [pageViews, setPageViews] = useState<PageViewStat[]>([]);
   const [eventBreakdown, setEventBreakdown] = useState<EventTypeStat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+
+  // Loads one page of a user's full login history and appends it (page 0 resets).
+  const loadUserHistory = useCallback(async (userId: string, page: number) => {
+    setHistoryLoadingUser(userId);
+    setHistoryErrorByUser((prev) => ({ ...prev, [userId]: null }));
+    try {
+      const res = await adminApiClient.getUserLoginHistory(userId, page, HISTORY_PAGE_SIZE);
+      setHistoryByUser((prev) => ({
+        ...prev,
+        [userId]: page === 0 ? res.content : [...(prev[userId] || []), ...res.content],
+      }));
+      setHistoryPage((prev) => ({ ...prev, [userId]: page }));
+      setHistoryTotalPages((prev) => ({ ...prev, [userId]: res.totalPages }));
+    } catch (e: unknown) {
+      setHistoryErrorByUser((prev) => ({
+        ...prev,
+        [userId]: e instanceof Error ? e.message : "Failed to load login history",
+      }));
+    } finally {
+      setHistoryLoadingUser(null);
+    }
+  }, []);
+
+  const toggleHistory = useCallback(
+    (userId: string) => {
+      setExpandedUser((current) => {
+        const next = current === userId ? null : userId;
+        if (next === userId && historyByUser[userId] === undefined) {
+          loadUserHistory(userId, 0);
+        }
+        return next;
+      });
+    },
+    [historyByUser, loadUserHistory]
+  );
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -301,34 +345,116 @@ export default function CustomerAnalyticsPage() {
                   </td>
                 </tr>
               ) : (
-                customers.map((customer) => (
-                  <tr key={customer.userId}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white/90">
-                      {customer.email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {customer.firstName || customer.lastName
-                        ? `${customer.firstName || ""} ${customer.lastName || ""}`.trim()
-                        : "N/A"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {customer.loginCount}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                      {customer.lastLoginAt
-                        ? new Date(customer.lastLoginAt).toLocaleString()
-                        : "Never"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Link
-                        href={`/users/list/${customer.userId}`}
-                        className="text-brand-600 hover:text-brand-900 dark:text-brand-400"
-                      >
-                        View
-                      </Link>
-                    </td>
-                  </tr>
-                ))
+                customers.map((customer) => {
+                  const isOpen = expandedUser === customer.userId;
+                  const events = historyByUser[customer.userId] || [];
+                  const loadedPage = historyPage[customer.userId] ?? -1;
+                  const userTotalPages = historyTotalPages[customer.userId] ?? 0;
+                  const hasMore = loadedPage + 1 < userTotalPages;
+                  const isLoadingHistory = historyLoadingUser === customer.userId;
+                  return (
+                    <Fragment key={customer.userId}>
+                      <tr>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white/90">
+                          {customer.email}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          {customer.firstName || customer.lastName
+                            ? `${customer.firstName || ""} ${customer.lastName || ""}`.trim()
+                            : "N/A"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          {customer.loginCount}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          {customer.lastLoginAt
+                            ? new Date(customer.lastLoginAt).toLocaleString()
+                            : "Never"}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => toggleHistory(customer.userId)}
+                              disabled={customer.loginCount === 0}
+                              className="text-brand-600 hover:text-brand-900 disabled:opacity-40 dark:text-brand-400"
+                            >
+                              {isOpen ? "Hide history" : "History"}
+                            </button>
+                            <Link
+                              href={`/users/list/${customer.userId}`}
+                              className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white"
+                            >
+                              View
+                            </Link>
+                          </div>
+                        </td>
+                      </tr>
+                      {isOpen && (
+                        <tr className="bg-gray-50 dark:bg-gray-800/40">
+                          <td colSpan={5} className="px-6 py-4">
+                            {isLoadingHistory && events.length === 0 ? (
+                              <div className="text-sm text-gray-500 dark:text-gray-400">Loading login history…</div>
+                            ) : historyErrorByUser[customer.userId] ? (
+                              <div className="text-sm text-red-600">{historyErrorByUser[customer.userId]}</div>
+                            ) : events.length === 0 ? (
+                              <div className="text-sm text-gray-500 dark:text-gray-400">No logins recorded.</div>
+                            ) : (
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                                    Full login history — {customer.loginCount} total
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      downloadCsv(
+                                        `login-history-${customer.email}`,
+                                        [
+                                          { key: "loggedInAt", label: "Logged In At" },
+                                          { key: "ipAddress", label: "IP Address" },
+                                        ],
+                                        events
+                                      )
+                                    }
+                                    className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                                  >
+                                    ⬇ CSV
+                                  </button>
+                                </div>
+                                <ol className="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                                  {events.map((event, index) => (
+                                    <li
+                                      key={`${event.loggedInAt}-${index}`}
+                                      className="flex items-center justify-between gap-4 py-2"
+                                    >
+                                      <span className="text-gray-800 dark:text-white/90">
+                                        {new Date(event.loggedInAt).toLocaleString()}
+                                      </span>
+                                      <span className="text-gray-500 dark:text-gray-400">
+                                        {event.ipAddress || "—"}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ol>
+                                {hasMore && (
+                                  <button
+                                    type="button"
+                                    disabled={isLoadingHistory}
+                                    onClick={() => loadUserHistory(customer.userId, loadedPage + 1)}
+                                    className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 disabled:opacity-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                                  >
+                                    {isLoadingHistory ? "Loading…" : "Load more"}
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  );
+                })
               )}
             </tbody>
           </table>
