@@ -15,7 +15,12 @@ const DEFAULTS: Record<string, string> = {
   "weeklyDeals.alert.area3": "🏢 Business Bay:",
   "weeklyDeals.alert.area4": "🌴 Jumeirah Beach:",
   "weeklyDeals.alert.deals": "deals",
+  "weeklyDeals.alert.count1": "3",
+  "weeklyDeals.alert.count2": "4",
+  "weeklyDeals.alert.count3": "3",
+  "weeklyDeals.alert.count4": "3",
   "weeklyDeals.alert.total": "Total active alerts:",
+  "weeklyDeals.alert.totalCount": "13",
   "weeklyDeals.alert.view": "View This Week's Alerts",
   "weeklyDeals.highlights.title": "This Week's Highlights",
   "weeklyDeals.highlights.market": "🔥 Hottest market:",
@@ -38,10 +43,10 @@ const DEFAULTS: Record<string, string> = {
 };
 
 const ALERT_AREAS = [
-  { key: "weeklyDeals.alert.area1", count: 3 },
-  { key: "weeklyDeals.alert.area2", count: 4 },
-  { key: "weeklyDeals.alert.area3", count: 3 },
-  { key: "weeklyDeals.alert.area4", count: 3 },
+  { key: "weeklyDeals.alert.area1", countKey: "weeklyDeals.alert.count1" },
+  { key: "weeklyDeals.alert.area2", countKey: "weeklyDeals.alert.count2" },
+  { key: "weeklyDeals.alert.area3", countKey: "weeklyDeals.alert.count3" },
+  { key: "weeklyDeals.alert.area4", countKey: "weeklyDeals.alert.count4" },
 ];
 
 interface EditableProps {
@@ -197,14 +202,14 @@ export default function WeeklyDealsTranslationEditor({ translations, languageCod
                 <div key={area.key} className="alert-row">
                   <span>{ed(area.key)}</span>
                   <span className="alert-number">
-                    {area.count} {ed("weeklyDeals.alert.deals")}
+                    {ed(area.countKey)} {ed("weeklyDeals.alert.deals")}
                   </span>
                 </div>
               ))}
             </div>
             <div className="alert-stats">
               <span>{ed("weeklyDeals.alert.total")}</span>
-              <span className="alert-number">13</span>
+              <span className="alert-number">{ed("weeklyDeals.alert.totalCount")}</span>
             </div>
           </div>
           <div className="btn">{ed("weeklyDeals.alert.view")}</div>
