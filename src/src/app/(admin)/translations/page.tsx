@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { adminApiClient, Translation, TranslationRequest } from "@/lib/api";
+import CityAnalysisTranslationEditor from "./CityAnalysisTranslationEditor";
 
 const MANDATORY_NAMESPACES = ["pricing"];
 
@@ -537,6 +538,21 @@ function TranslationsPageContent() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Live, in-context editor for the city-analysis preview page. */}
+      {selectedNamespace === "cityAnalysis" && (
+        <CityAnalysisTranslationEditor
+          translations={translations}
+          languageCode={selectedLanguage}
+          onSaved={loadTranslations}
+        />
+      )}
+
+      {selectedNamespace === "cityAnalysis" && (
+        <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+          The full list below includes every cityAnalysis key (upgrade-shadow texts, etc.) for advanced editing.
+        </p>
       )}
 
       {/* Translations Table */}

@@ -1,0 +1,144 @@
+/* Faithful replica of the public city-analysis preview page, scoped under
+   .ca-preview so it never leaks into the admin theme. Base rules copied from
+   the app's dashboard.css / city-analysis.css. Text nodes are contentEditable
+   so an admin can update translations directly on the real design. */
+
+.ca-preview {
+  margin: 0 auto;
+  max-width: 1100px;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  color: #333;
+}
+
+.ca-preview .city-analysis-header {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  padding: 40px;
+  text-align: center;
+}
+
+.ca-preview .city-analysis-header h2 {
+  font-size: 2.5em;
+  margin-bottom: 10px;
+  font-weight: 600;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.ca-preview .city-analysis-header p {
+  font-size: 1.1em;
+  opacity: 0.95;
+}
+
+.ca-preview .city-analysis-summary {
+  padding: 50px 40px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 50px;
+  background: linear-gradient(to bottom, #fffbeb 0%, #ffffff 100%);
+}
+
+.ca-preview .city-analysis-left h3,
+.ca-preview .city-analysis-right h3 {
+  color: #b45309;
+  margin-bottom: 30px;
+  font-size: 2em;
+  border-bottom: 3px solid #fbbf24;
+  padding-bottom: 10px;
+}
+
+.ca-preview .city-metrics-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ca-preview .city-metrics-list li {
+  padding: 15px 0;
+  border-bottom: 1px solid #fde68a;
+  display: flex;
+  align-items: center;
+  font-size: 1.05em;
+  color: #333;
+}
+
+.ca-preview .city-metrics-list li::before {
+  content: "▸";
+  color: #f59e0b;
+  font-size: 1.5em;
+  margin-right: 15px;
+  font-weight: bold;
+}
+
+.ca-preview .city-analysis-cards {
+  display: grid;
+  gap: 15px;
+}
+
+.ca-preview .city-analysis-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  border-left: 4px solid #fbbf24;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.15);
+}
+
+.ca-preview .city-analysis-card h4 {
+  color: #d97706;
+  font-size: 1.1em;
+  margin-bottom: 8px;
+}
+
+.ca-preview .city-analysis-card p {
+  color: #666;
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+.ca-preview .city-analysis-cta {
+  text-align: center;
+  padding: 50px 40px;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+.ca-preview .city-cta-button {
+  display: inline-block;
+  background: white;
+  color: #d97706;
+  border: none;
+  padding: 20px 60px;
+  font-size: 1.3em;
+  font-weight: 600;
+  border-radius: 50px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Stack columns on narrow admin content areas, matching the app breakpoint. */
+@media (max-width: 968px) {
+  .ca-preview .city-analysis-summary {
+    grid-template-columns: 1fr;
+    gap: 30px;
+  }
+  .ca-preview .city-analysis-header h2 {
+    font-size: 1.5em;
+  }
+}
+
+/* Editable affordance: highlight the text an admin can click into. */
+.ca-preview [data-ca-editable] {
+  outline: none;
+  border-radius: 4px;
+  transition: box-shadow 0.15s ease, background 0.15s ease;
+  cursor: text;
+}
+.ca-preview [data-ca-editable]:hover {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35);
+}
+.ca-preview [data-ca-editable]:focus {
+  box-shadow: 0 0 0 2px #3b82f6;
+  background: rgba(255, 255, 255, 0.6);
+}
