@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, Suspense, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { adminApiClient, Translation, TranslationRequest } from "@/lib/api";
 import CityAnalysisTranslationEditor from "./CityAnalysisTranslationEditor";
+import WeeklyDealsTranslationEditor from "./WeeklyDealsTranslationEditor";
 
 const MANDATORY_NAMESPACES = ["pricing"];
 
@@ -552,6 +553,21 @@ function TranslationsPageContent() {
       {selectedNamespace === "cityAnalysis" && (
         <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
           The full list below includes every cityAnalysis key (upgrade-shadow texts, etc.) for advanced editing.
+        </p>
+      )}
+
+      {/* Live, in-context editor for the weekly-deals preview page. */}
+      {selectedNamespace === "weeklyDeals" && (
+        <WeeklyDealsTranslationEditor
+          translations={translations}
+          languageCode={selectedLanguage}
+          onSaved={loadTranslations}
+        />
+      )}
+
+      {selectedNamespace === "weeklyDeals" && (
+        <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+          The full list below includes every weeklyDeals key (stats, upgrade texts, etc.) for advanced editing.
         </p>
       )}
 

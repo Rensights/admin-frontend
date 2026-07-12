@@ -1,0 +1,154 @@
+/* Faithful replica of the public weekly-deals preview page, scoped under
+   .wd-preview so it never leaks into the admin theme. Rules combine the base
+   styles (dashboard.css / deals.css) with the .weekly-deals-page size
+   overrides. Text nodes are contentEditable for in-place translation editing. */
+
+.wd-preview {
+  padding: 24px;
+  background: linear-gradient(135deg, #fdf6ec 0%, #f7f5f0 100%);
+  border-radius: 16px;
+}
+
+.wd-preview .section-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  margin-bottom: 12px;
+}
+
+.wd-preview .section-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.wd-preview .alert-item {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-left: 4px solid #f39c12;
+}
+
+.wd-preview .alert-title {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+}
+
+.wd-preview .alert-desc {
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.wd-preview .alert-list {
+  margin: 8px 0;
+}
+
+.wd-preview .alert-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 0.88rem;
+}
+
+.wd-preview .alert-number {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: white;
+  padding: 3px 7px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-align: right;
+  font-size: 0.8rem;
+}
+
+.wd-preview .alert-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+.wd-preview .highlights {
+  font-size: 0.88rem;
+  color: #666;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wd-preview .highlights div {
+  padding-bottom: 8px;
+}
+
+.wd-preview .alert-performance {
+  color: #28a745;
+  font-weight: 500;
+  margin-left: 6px;
+}
+
+.wd-preview .info-text {
+  color: #666;
+  line-height: 1.45;
+  margin-bottom: 10px;
+  font-size: 0.88rem;
+}
+
+.wd-preview .report-disclaimer {
+  background: #fff8e6;
+  border: 1px solid #f1d6a2;
+  color: #5a4b2d;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.wd-preview .report-disclaimer .section-title {
+  color: #8a5a00;
+  font-size: 1.05rem;
+  margin-bottom: 8px;
+}
+
+.wd-preview .report-disclaimer h4 {
+  margin: 8px 0 3px;
+  font-size: 0.88rem;
+  color: #7a4b00;
+}
+
+.wd-preview .report-disclaimer p {
+  margin: 0 0 6px;
+}
+
+.wd-preview .btn {
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* Editable affordance: highlight the text an admin can click into. */
+.wd-preview [data-wd-editable] {
+  outline: none;
+  border-radius: 4px;
+  transition: box-shadow 0.15s ease, background 0.15s ease;
+  cursor: text;
+}
+.wd-preview [data-wd-editable]:hover {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35);
+}
+.wd-preview [data-wd-editable]:focus {
+  box-shadow: 0 0 0 2px #3b82f6;
+  background: rgba(255, 255, 255, 0.7);
+}
