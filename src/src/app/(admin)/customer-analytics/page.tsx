@@ -32,6 +32,7 @@ export default function CustomerAnalyticsPage() {
   const [growthTrend, setGrowthTrend] = useState<CustomerGrowthPoint[]>([]);
   const [customers, setCustomers] = useState<CustomerLoginStat[]>([]);
   const [exporting, setExporting] = useState(false);
+  const [exportingAll, setExportingAll] = useState(false);
   // Per-user full login history (loaded on demand when a row is expanded).
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [historyByUser, setHistoryByUser] = useState<Record<string, LoginEvent[]>>({});
@@ -122,6 +123,20 @@ export default function CustomerAnalyticsPage() {
     }
   }, []);
 
+  // Downloads everything: all login + activity events for every customer, each
+  // row carrying the customer's details, in one CSV.
+  const handleExportEverything = useCallback(async () => {
+    setExportingAll(true);
+    setError(null);
+    try {
+      await adminApiClient.downloadFullCustomerExport();
+    } catch (err: any) {
+      setError(err.message || "Failed to export all data");
+    } finally {
+      setExportingAll(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadData();
   }, [loadData]);
@@ -148,11 +163,22 @@ export default function CustomerAnalyticsPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Customer Analytics</h1>
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Active users and per-customer login activity
-        </p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Customer Analytics</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Active users and per-customer login activity
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleExportEverything}
+          disabled={exportingAll}
+          title="Download all login and activity events for every customer, with customer details, in one CSV"
+          className="rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-50"
+        >
+          {exportingAll ? "Preparing…" : "⬇ Download everything"}
+        </button>
       </div>
 
       {error && (

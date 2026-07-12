@@ -208,6 +208,26 @@ class AdminApiClient {
     URL.revokeObjectURL(url);
   }
 
+  // Full export: every login + activity event across all customers, one row per
+  // event with the owning customer's details, in a single CSV.
+  async downloadFullCustomerExport(): Promise<void> {
+    const res = await fetch(`${API_URL}/api/admin/customer-analytics/customers/export-all`, {
+      credentials: 'include',
+    });
+    if (!res.ok) {
+      throw new Error(`Failed to download full export (status ${res.status})`);
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `customer-analytics-full-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
   async getPageViewStats(days: number = 30): Promise<PageViewStat[]> {
     return this.request<PageViewStat[]>(`/api/admin/customer-analytics/page-views?days=${days}`);
   }
