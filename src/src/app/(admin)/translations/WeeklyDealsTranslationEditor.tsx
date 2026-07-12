@@ -15,10 +15,10 @@ const DEFAULTS: Record<string, string> = {
   "weeklyDeals.alert.area3": "🏢 Business Bay:",
   "weeklyDeals.alert.area4": "🌴 Jumeirah Beach:",
   "weeklyDeals.alert.deals": "deals",
-  "weeklyDeals.alert.count1": "3",
-  "weeklyDeals.alert.count2": "4",
-  "weeklyDeals.alert.count3": "3",
-  "weeklyDeals.alert.count4": "3",
+  "weeklyDeals.alert.count1": "3 deals",
+  "weeklyDeals.alert.count2": "4 deals",
+  "weeklyDeals.alert.count3": "3 deals",
+  "weeklyDeals.alert.count4": "3 deals",
   "weeklyDeals.alert.total": "Total active alerts:",
   "weeklyDeals.alert.totalCount": "13",
   "weeklyDeals.alert.view": "View This Week's Alerts",
@@ -201,9 +201,7 @@ export default function WeeklyDealsTranslationEditor({ translations, languageCod
               {ALERT_AREAS.map((area) => (
                 <div key={area.key} className="alert-row">
                   <span>{ed(area.key)}</span>
-                  <span className="alert-number">
-                    {ed(area.countKey)} {ed("weeklyDeals.alert.deals")}
-                  </span>
+                  <span className="alert-number">{ed(area.countKey)}</span>
                 </div>
               ))}
             </div>
