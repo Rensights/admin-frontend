@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { adminApiClient, AnalysisRequest, AnalysisReportView } from "@/lib/api";
+import { adminApiClient, AnalysisRequest, AnalysisReportView, AnalysisComparable } from "@/lib/api";
 import Link from "next/link";
 
 export default function AnalysisRequestDetailPage() {
@@ -15,6 +15,10 @@ export default function AnalysisRequestDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  // Manual corrections: `draft` holds the mapped view being edited until it is saved.
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<AnalysisReportView | null>(null);
+  const [savingEdits, setSavingEdits] = useState(false);
 
   const loadRequest = useCallback(async () => {
     if (!requestId) return;
@@ -66,6 +70,74 @@ export default function AnalysisRequestDetailPage() {
     }
   };
 
+  const startEditing = () => {
+    const current = request?.analysis || {};
+    setDraft({
+      ...current,
+      valuationWarning: { title: "", message: "", ...(current.valuationWarning || {}) },
+      listingComparables: (current.listingComparables ?? []).map((item) => ({ ...item })),
+      transactionComparables: (current.transactionComparables ?? []).map((item) => ({ ...item })),
+    });
+    setEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+    setDraft(null);
+  };
+
+  const handleSaveEdits = async () => {
+    if (!requestId || !draft) return;
+    setSavingEdits(true);
+    setError(null);
+    try {
+      const updated = await adminApiClient.updateAnalysisResult(requestId, draft);
+      setRequest(updated);
+      setEditing(false);
+      setDraft(null);
+    } catch (err: any) {
+      setError(err.message || "Failed to save analysis result");
+    } finally {
+      setSavingEdits(false);
+    }
+  };
+
+  const setDraftField = (field: keyof AnalysisReportView, value: string) => {
+    setDraft((current) => (current ? { ...current, [field]: value } : current));
+  };
+
+  const setWarningField = (field: "title" | "message", value: string) => {
+    setDraft((current) =>
+      current
+        ? { ...current, valuationWarning: { ...(current.valuationWarning || {}), [field]: value } }
+        : current
+    );
+  };
+
+  const setComparableField = (
+    list: "listingComparables" | "transactionComparables",
+    index: number,
+    field: keyof AnalysisComparable,
+    value: string
+  ) => {
+    setDraft((current) => {
+      if (!current) return current;
+      const rows = [...(current[list] ?? [])];
+      rows[index] = { ...rows[index], [field]: value };
+      return { ...current, [list]: rows };
+    });
+  };
+
+  const addComparable = (list: "listingComparables" | "transactionComparables") => {
+    setDraft((current) => (current ? { ...current, [list]: [...(current[list] ?? []), {}] } : current));
+  };
+
+  const removeComparable = (list: "listingComparables" | "transactionComparables", index: number) => {
+    setDraft((current) =>
+      current ? { ...current, [list]: (current[list] ?? []).filter((_, i) => i !== index) } : current
+    );
+  };
+
   useEffect(() => {
     loadRequest();
   }, [router, loadRequest]);
@@ -108,6 +180,7 @@ export default function AnalysisRequestDetailPage() {
     .filter(Boolean)
     .join(" ");
   const analysisIdDisplay = request.analysisId || request.id;
+  const editedAt = raw.admin_edited_at as string | undefined;
 
   return (
     <div>
@@ -140,22 +213,53 @@ export default function AnalysisRequestDetailPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={handleRefreshResult}
-              disabled={syncing}
-              className="px-4 py-2 rounded-lg text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-60"
-            >
-              {syncing ? "Fetching..." : "Fetch Result"}
-            </button>
-            <button
-              type="button"
-              onClick={handleApprove}
-              disabled={updatingStatus || request.status === "COMPLETED" || !request.analysisResult}
-              className="px-4 py-2 rounded-lg text-white bg-success-500 hover:bg-success-600 disabled:opacity-60"
-            >
-              {updatingStatus ? "Approving..." : "Approve Result"}
-            </button>
+            {editing ? (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSaveEdits}
+                  disabled={savingEdits}
+                  className="px-4 py-2 rounded-lg text-white bg-success-500 hover:bg-success-600 disabled:opacity-60"
+                >
+                  {savingEdits ? "Saving..." : "Save Changes"}
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelEditing}
+                  disabled={savingEdits}
+                  className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-60 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={handleRefreshResult}
+                  disabled={syncing}
+                  className="px-4 py-2 rounded-lg text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-60"
+                >
+                  {syncing ? "Fetching..." : "Fetch Result"}
+                </button>
+                <button
+                  type="button"
+                  onClick={startEditing}
+                  disabled={!request.analysisResult}
+                  className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-60 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
+                  Edit Result
+                </button>
+                <button
+                  type="button"
+                  onClick={handleApprove}
+                  disabled={updatingStatus || request.status === "COMPLETED" || !request.analysisResult}
+                  className="px-4 py-2 rounded-lg text-white bg-success-500 hover:bg-success-600 disabled:opacity-60"
+                >
+                  {updatingStatus ? "Approving..." : "Approve Result"}
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -169,10 +273,89 @@ export default function AnalysisRequestDetailPage() {
               <div className="text-xs uppercase text-gray-400">Result Status</div>
               <div className="mt-1 font-medium">{request.analysisResult ? "Fetched" : "Not fetched"}</div>
             </div>
+            {editedAt && (
+              <div>
+                <div className="text-xs uppercase text-gray-400">Manually Edited</div>
+                <div className="mt-1 font-medium">{new Date(editedAt).toLocaleString()}</div>
+              </div>
+            )}
           </div>
+          {editing && (
+            <p className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+              Values are shown exactly as the user&apos;s report renders them. Fetching the result again
+              replaces the payload and discards these edits.
+            </p>
+          )}
         </div>
 
-        {request.analysisResult ? (
+        {editing && draft ? (
+          <div className="space-y-6">
+            <EditSection title="Summary">
+              <EditField label="Building Name" value={draft.buildingName} onChange={(v) => setDraftField("buildingName", v)} />
+              <EditField label="Area" value={draft.area} onChange={(v) => setDraftField("area", v)} />
+              <EditField label="City" value={draft.city} onChange={(v) => setDraftField("city", v)} />
+              <EditField label="Bedrooms" value={draft.bedrooms} onChange={(v) => setDraftField("bedrooms", v)} />
+              <EditField label="Size" value={draft.size} onChange={(v) => setDraftField("size", v)} placeholder="520 sq ft" />
+              <EditField label="Building Status" value={draft.buildingStatus} onChange={(v) => setDraftField("buildingStatus", v)} placeholder="Ready" />
+            </EditSection>
+
+            <EditSection title="Price & Market">
+              <EditField label="Listed Price" value={draft.listedPrice} onChange={(v) => setDraftField("listedPrice", v)} placeholder="AED 1.9M" />
+              <EditField label="Our Estimate Range" value={draft.estimateRange} onChange={(v) => setDraftField("estimateRange", v)} placeholder="AED 1.38M - 1.46M" />
+              <EditField label="Potential Savings" value={draft.potentialSavings} onChange={(v) => setDraftField("potentialSavings", v)} placeholder="AED 180k - 270k" />
+              <EditField label="Price per sq ft" value={draft.pricePerSqft} onChange={(v) => setDraftField("pricePerSqft", v)} placeholder="AED 3,653/sq ft" />
+              <EditField label="Rental Yield" value={draft.rentalYield} onChange={(v) => setDraftField("rentalYield", v)} placeholder="4.7%" />
+              <EditField label="Market Gap" value={draft.marketGapPercentage} onChange={(v) => setDraftField("marketGapPercentage", v)} placeholder="33.7%" />
+              <EditField label="Market Direction" value={draft.marketDirectionLabel} onChange={(v) => setDraftField("marketDirectionLabel", v)} placeholder="Above Market" />
+            </EditSection>
+
+            <EditSection title="Insights">
+              <EditField label="Market Position" value={draft.marketPosition} onChange={(v) => setDraftField("marketPosition", v)} wide />
+              <EditField label="Dubai Comparison" value={draft.dubaiComparison} onChange={(v) => setDraftField("dubaiComparison", v)} wide />
+              <EditField label="Valuation Warning Title" value={draft.valuationWarning?.title} onChange={(v) => setWarningField("title", v)} />
+              <EditField
+                label="Valuation Warning Message"
+                value={draft.valuationWarning?.message}
+                onChange={(v) => setWarningField("message", v)}
+                multiline
+                wide
+              />
+            </EditSection>
+
+            <EditSection title="Property Details">
+              <EditField label="Furnishing" value={draft.furnishing} onChange={(v) => setDraftField("furnishing", v)} />
+              <EditField label="Developer" value={draft.developer} onChange={(v) => setDraftField("developer", v)} />
+              <EditField label="View" value={draft.view} onChange={(v) => setDraftField("view", v)} />
+              <EditField label="Service Charge" value={draft.serviceCharge} onChange={(v) => setDraftField("serviceCharge", v)} />
+              <EditField label="Nearest Landmark" value={draft.nearestLandmark} onChange={(v) => setDraftField("nearestLandmark", v)} />
+              <EditField label="Building Features" value={draft.buildingFeatures} onChange={(v) => setDraftField("buildingFeatures", v)} placeholder="Gym, pool, security" />
+            </EditSection>
+
+            <ComparablesEditor
+              title="Listing Comparables"
+              rows={draft.listingComparables ?? []}
+              priceField="listedPriceDisplay"
+              priceLabel="Listed Price"
+              lastField="listingUrl"
+              lastLabel="Listing URL"
+              onChange={(index, field, value) => setComparableField("listingComparables", index, field, value)}
+              onAdd={() => addComparable("listingComparables")}
+              onRemove={(index) => removeComparable("listingComparables", index)}
+            />
+
+            <ComparablesEditor
+              title="Transaction Comparables"
+              rows={draft.transactionComparables ?? []}
+              priceField="salePriceDisplay"
+              priceLabel="Sale Price"
+              lastField="transactionDate"
+              lastLabel="Transaction Date"
+              onChange={(index, field, value) => setComparableField("transactionComparables", index, field, value)}
+              onAdd={() => addComparable("transactionComparables")}
+              onRemove={(index) => removeComparable("transactionComparables", index)}
+            />
+          </div>
+        ) : request.analysisResult ? (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
@@ -627,6 +810,123 @@ export default function AnalysisRequestDetailPage() {
     </div>
   );
 }
+
+const INPUT_CLASS =
+  "mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 " +
+  "focus:border-brand-500 focus:outline-none dark:border-gray-800 dark:bg-gray-950 dark:text-white/90";
+
+const EditSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+    <h3 className="text-sm font-semibold text-gray-900 dark:text-white/90 mb-4">{title}</h3>
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{children}</div>
+  </div>
+);
+
+const EditField = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  multiline,
+  wide,
+}: {
+  label: string;
+  value?: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  multiline?: boolean;
+  /** Spans the full row — for the long insight and warning texts. */
+  wide?: boolean;
+}) => (
+  <label className={`block ${wide ? "md:col-span-3" : ""}`}>
+    <span className="text-xs uppercase text-gray-400">{label}</span>
+    {multiline ? (
+      <textarea
+        rows={3}
+        value={value ?? ""}
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+        className={INPUT_CLASS}
+      />
+    ) : (
+      <input
+        type="text"
+        value={value ?? ""}
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+        className={INPUT_CLASS}
+      />
+    )}
+  </label>
+);
+
+/**
+ * The comparables list editor. Listing and transaction rows share every field but two, which
+ * are passed in: the price field and the trailing field (listing URL vs transaction date).
+ */
+const ComparablesEditor = ({
+  title,
+  rows,
+  priceField,
+  priceLabel,
+  lastField,
+  lastLabel,
+  onChange,
+  onAdd,
+  onRemove,
+}: {
+  title: string;
+  rows: AnalysisComparable[];
+  priceField: keyof AnalysisComparable;
+  priceLabel: string;
+  lastField: keyof AnalysisComparable;
+  lastLabel: string;
+  onChange: (index: number, field: keyof AnalysisComparable, value: string) => void;
+  onAdd: () => void;
+  onRemove: (index: number) => void;
+}) => (
+  <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
+    <div className="mb-4 flex items-center justify-between">
+      <h3 className="text-sm font-semibold text-gray-900 dark:text-white/90">{title}</h3>
+      <button
+        type="button"
+        onClick={onAdd}
+        className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800"
+      >
+        Add row
+      </button>
+    </div>
+
+    {rows.length === 0 ? (
+      <div className="text-sm text-gray-500 dark:text-gray-400">No rows. Add one to fill it in.</div>
+    ) : (
+      <div className="space-y-4">
+        {rows.map((row, index) => (
+          <div key={index} className="rounded-lg border border-gray-200 p-4 dark:border-gray-800">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <EditField label="Building Name" value={row.buildingName} onChange={(v) => onChange(index, "buildingName", v)} />
+              <EditField label="Area" value={row.area} onChange={(v) => onChange(index, "area", v)} />
+              <EditField label="Bedrooms" value={row.bedrooms} onChange={(v) => onChange(index, "bedrooms", v)} />
+              <EditField label="Size" value={row.sizeDisplay} onChange={(v) => onChange(index, "sizeDisplay", v)} placeholder="543 sq ft" />
+              <EditField label={priceLabel} value={row[priceField]} onChange={(v) => onChange(index, priceField, v)} />
+              <EditField label="Price per sq ft" value={row.pricePerSqftDisplay} onChange={(v) => onChange(index, "pricePerSqftDisplay", v)} />
+              <EditField label={lastLabel} value={row[lastField]} onChange={(v) => onChange(index, lastField, v)} wide />
+            </div>
+            <div className="mt-3 text-right">
+              <button
+                type="button"
+                onClick={() => onRemove(index)}
+                className="text-sm text-error-500 hover:underline"
+              >
+                Remove row
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+);
 
 
 

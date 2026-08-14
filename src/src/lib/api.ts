@@ -271,6 +271,17 @@ class AdminApiClient {
     });
   }
 
+  /**
+   * Save an admin's manual corrections. The payload is the mapped view; the backend writes it
+   * back onto the analysis payload, so a re-fetch from the module discards these edits.
+   */
+  async updateAnalysisResult(requestId: string, analysis: AnalysisReportView): Promise<AnalysisRequest> {
+    return this.request<AnalysisRequest>(`/api/admin/analysis-requests/${requestId}/analysis-result`, {
+      method: 'PUT',
+      body: JSON.stringify(analysis),
+    });
+  }
+
   // Deal management endpoints
   async getPendingDeals(page: number = 0, size: number = 20, city?: string): Promise<PaginatedResponse<Deal>> {
     const cityParam = city ? `&city=${encodeURIComponent(city)}` : '';
