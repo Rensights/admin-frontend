@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { adminApiClient, AnalysisRequest } from "@/lib/api";
+import { adminApiClient, AnalysisRequest, AnalysisReportView } from "@/lib/api";
 import Link from "next/link";
 
 export default function AnalysisRequestDetailPage() {
@@ -92,26 +92,21 @@ export default function AnalysisRequestDetailPage() {
     );
   }
 
-  const analysis = request.analysisResult || {};
+  // The mapped, display-ready view the user's report renders. Fields the report does not
+  // cover (scores, module diagnostics) are still read from the raw payload below.
+  const analysis: AnalysisReportView = request.analysis || {};
+  const raw = request.analysisResult || {};
+
   const formatValue = (value: any) => {
     if (value === null || value === undefined || value === "") return "N/A";
     return String(value);
   };
-  const parseJsonArray = (value: any) => {
-    if (!value) return [];
-    if (Array.isArray(value)) return value;
-    if (typeof value === "string") {
-      try {
-        const parsed = JSON.parse(value);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
-    }
-    return [];
-  };
-  const listingComparables = parseJsonArray(analysis.listing_comparables);
-  const transactionComparables = parseJsonArray(analysis.transaction_comparables);
+  const listingComparables = analysis.listingComparables ?? [];
+  const transactionComparables = analysis.transactionComparables ?? [];
+  const valuationWarning = analysis.valuationWarning || null;
+  const marketGap = [analysis.marketGapPercentage, analysis.marketDirectionLabel]
+    .filter(Boolean)
+    .join(" ");
   const analysisIdDisplay = request.analysisId || request.id;
 
   return (
@@ -182,48 +177,61 @@ export default function AnalysisRequestDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
                 <div className="text-xs uppercase text-gray-400">Listed Price</div>
-                <div className="mt-1 text-sm font-semibold">{formatValue(analysis.listed_price_aed)}</div>
+                <div className="mt-1 text-sm font-semibold">{formatValue(analysis.listedPrice)}</div>
               </div>
               <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-                <div className="text-xs uppercase text-gray-400">Size (sq ft)</div>
-                <div className="mt-1 text-sm font-semibold">{formatValue(analysis.size_sqft)}</div>
+                <div className="text-xs uppercase text-gray-400">Size</div>
+                <div className="mt-1 text-sm font-semibold">{formatValue(analysis.size)}</div>
               </div>
               <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
                 <div className="text-xs uppercase text-gray-400">Bedrooms</div>
                 <div className="mt-1 text-sm font-semibold">{formatValue(analysis.bedrooms)}</div>
               </div>
               <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
-                <div className="text-xs uppercase text-gray-400">Property Type</div>
-                <div className="mt-1 text-sm font-semibold">{formatValue(analysis.property_type)}</div>
+                <div className="text-xs uppercase text-gray-400">Price vs Market</div>
+                <div className="mt-1 text-sm font-semibold">{formatValue(marketGap)}</div>
               </div>
             </div>
+
+            {valuationWarning && (
+              <div className="rounded-lg border border-warning-200 bg-warning-50 p-4 dark:border-warning-500/30 dark:bg-warning-500/10">
+                <div className="text-sm font-semibold text-warning-700 dark:text-warning-400">
+                  ⚠️ {formatValue(valuationWarning.title)}
+                </div>
+                {valuationWarning.message && (
+                  <p className="mt-1 text-sm text-warning-700/90 dark:text-warning-400/90">
+                    {valuationWarning.message}
+                  </p>
+                )}
+              </div>
+            )}
 
             <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white/90 mb-4">Price Analysis</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div>
                   <div className="text-xs uppercase text-gray-400">Our Estimate Range</div>
-                  <div className="mt-1 font-semibold">{formatValue(analysis.our_price_estimate)}</div>
-                </div>
-                <div>
-                  <div className="text-xs uppercase text-gray-400">Price vs Estimations</div>
-                  <div className="mt-1 font-semibold">{formatValue(analysis.price_vs_estimations)}</div>
+                  <div className="mt-1 font-semibold">{formatValue(analysis.estimateRange)}</div>
                 </div>
                 <div>
                   <div className="text-xs uppercase text-gray-400">Potential Savings</div>
-                  <div className="mt-1 font-semibold">{formatValue(analysis.potential_savings)}</div>
+                  <div className="mt-1 font-semibold">{formatValue(analysis.potentialSavings)}</div>
                 </div>
                 <div>
                   <div className="text-xs uppercase text-gray-400">Price per sq ft</div>
-                  <div className="mt-1 font-semibold">{formatValue(analysis.price_per_sqft)}</div>
+                  <div className="mt-1 font-semibold">{formatValue(analysis.pricePerSqft)}</div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-gray-400">Market Gap</div>
+                  <div className="mt-1 font-semibold">{formatValue(analysis.marketGapPercentage)}</div>
+                </div>
+                <div>
+                  <div className="text-xs uppercase text-gray-400">Market Direction</div>
+                  <div className="mt-1 font-semibold">{formatValue(analysis.marketDirectionLabel)}</div>
                 </div>
                 <div>
                   <div className="text-xs uppercase text-gray-400">Market Avg / sq ft</div>
-                  <div className="mt-1 font-semibold">{formatValue(analysis.market_average_price_per_sqft)}</div>
-                </div>
-                <div>
-                  <div className="text-xs uppercase text-gray-400">Price / sq ft vs Market</div>
-                  <div className="mt-1 font-semibold">{formatValue(analysis.price_per_sqft_vs_market)}</div>
+                  <div className="mt-1 font-semibold">{formatValue(raw.market_average_price_per_sqft)}</div>
                 </div>
               </div>
             </div>
@@ -234,23 +242,23 @@ export default function AnalysisRequestDetailPage() {
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center justify-between">
                     <span>Rensights Score</span>
-                    <span className="font-semibold">{formatValue(analysis.rensights_score)}</span>
+                    <span className="font-semibold">{formatValue(raw.rensights_score)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Price vs Market</span>
-                    <span className="font-semibold">{formatValue(analysis.price_vs_market_score)}</span>
+                    <span className="font-semibold">{formatValue(raw.price_vs_market_score)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Rental Potential</span>
-                    <span className="font-semibold">{formatValue(analysis.rental_potential_score)}</span>
+                    <span className="font-semibold">{formatValue(raw.rental_potential_score)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Liquidity</span>
-                    <span className="font-semibold">{formatValue(analysis.liquidity_score)}</span>
+                    <span className="font-semibold">{formatValue(raw.liquidity_score)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Location & Transport</span>
-                    <span className="font-semibold">{formatValue(analysis.location_transport_score)}</span>
+                    <span className="font-semibold">{formatValue(raw.location_transport_score)}</span>
                   </div>
                 </div>
               </div>
@@ -259,28 +267,24 @@ export default function AnalysisRequestDetailPage() {
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white/90 mb-4">Rental & Market</h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center justify-between">
-                    <span>Gross Rental Yield</span>
-                    <span className="font-semibold">{formatValue(analysis.gross_rental_yield)}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Rental Yield Estimate</span>
-                    <span className="font-semibold">{formatValue(analysis.rental_yield_estimate)}</span>
+                    <span>Rental Yield</span>
+                    <span className="font-semibold">{formatValue(analysis.rentalYield)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Annual Rent Estimate</span>
-                    <span className="font-semibold">{formatValue(analysis.annual_rent_estimate)}</span>
+                    <span className="font-semibold">{formatValue(raw.annual_rent_estimate)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Average Market Yield</span>
-                    <span className="font-semibold">{formatValue(analysis.average_market_yield_estimate)}</span>
+                    <span className="font-semibold">{formatValue(raw.average_market_yield_estimate)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Market Position</span>
-                    <span className="font-semibold">{formatValue(analysis.market_position)}</span>
+                    <span className="font-semibold">{formatValue(analysis.marketPosition)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span>Dubai Comparison</span>
-                    <span className="font-semibold">{formatValue(analysis.dubai_comparison)}</span>
+                    <span className="font-semibold">{formatValue(analysis.dubaiComparison)}</span>
                   </div>
                 </div>
               </div>
@@ -291,7 +295,7 @@ export default function AnalysisRequestDetailPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div>
                   <div className="text-xs uppercase text-gray-400">Building Status</div>
-                  <div className="mt-1 font-semibold">{formatValue(analysis.building_status)}</div>
+                  <div className="mt-1 font-semibold">{formatValue(analysis.buildingStatus)}</div>
                 </div>
                 <div>
                   <div className="text-xs uppercase text-gray-400">Furnishing</div>
@@ -307,19 +311,15 @@ export default function AnalysisRequestDetailPage() {
                 </div>
                 <div>
                   <div className="text-xs uppercase text-gray-400">Service Charge</div>
-                  <div className="mt-1 font-semibold">{formatValue(analysis.service_charge)}</div>
+                  <div className="mt-1 font-semibold">{formatValue(analysis.serviceCharge)}</div>
                 </div>
                 <div>
                   <div className="text-xs uppercase text-gray-400">Building Features</div>
-                  <div className="mt-1 font-semibold">{formatValue(analysis.building_features)}</div>
-                </div>
-                <div>
-                  <div className="text-xs uppercase text-gray-400">Investment Appeal</div>
-                  <div className="mt-1 font-semibold">{formatValue(analysis.investment_appeal)}</div>
+                  <div className="mt-1 font-semibold">{formatValue(analysis.buildingFeatures)}</div>
                 </div>
                 <div>
                   <div className="text-xs uppercase text-gray-400">Nearest Landmark</div>
-                  <div className="mt-1 font-semibold">{formatValue(analysis.nearest_landmark)}</div>
+                  <div className="mt-1 font-semibold">{formatValue(analysis.nearestLandmark)}</div>
                 </div>
               </div>
             </div>
@@ -331,12 +331,32 @@ export default function AnalysisRequestDetailPage() {
                   <div className="text-sm text-gray-500 dark:text-gray-400">No listing comparables available.</div>
                 ) : (
                   <div className="space-y-3 text-sm">
-                    {listingComparables.map((item: any, index: number) => (
+                    {listingComparables.map((item, index) => (
                       <div key={`listing-${index}`} className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-800">
-                        <div className="font-medium">{formatValue(item.building || item.name)}</div>
+                        <div>
+                          <div className="font-medium">
+                            {item.listingUrl ? (
+                              <a
+                                href={item.listingUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-brand-600 hover:underline dark:text-brand-400"
+                              >
+                                {formatValue(item.buildingName)}
+                              </a>
+                            ) : (
+                              formatValue(item.buildingName)
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {[item.bedrooms, item.area].filter(Boolean).join(" • ") || "—"}
+                          </div>
+                        </div>
                         <div className="text-right">
-                          <div>{formatValue(item.price)}</div>
-                          <div className="text-xs text-gray-500">{formatValue(item.sqft)} sq ft</div>
+                          <div>{formatValue(item.listedPriceDisplay)}</div>
+                          <div className="text-xs text-gray-500">
+                            {[item.sizeDisplay, item.pricePerSqftDisplay].filter(Boolean).join(" • ") || "—"}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -350,12 +370,21 @@ export default function AnalysisRequestDetailPage() {
                   <div className="text-sm text-gray-500 dark:text-gray-400">No transaction comparables available.</div>
                 ) : (
                   <div className="space-y-3 text-sm">
-                    {transactionComparables.map((item: any, index: number) => (
+                    {transactionComparables.map((item, index) => (
                       <div key={`transaction-${index}`} className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2 dark:border-gray-800">
-                        <div className="font-medium">{formatValue(item.building || item.name)}</div>
+                        <div>
+                          <div className="font-medium">{formatValue(item.buildingName)}</div>
+                          <div className="text-xs text-gray-500">
+                            {[item.bedrooms, item.area].filter(Boolean).join(" • ") || "—"}
+                          </div>
+                        </div>
                         <div className="text-right">
-                          <div>{formatValue(item.price)}</div>
-                          <div className="text-xs text-gray-500">{formatValue(item.date)}</div>
+                          <div>{formatValue(item.salePriceDisplay)}</div>
+                          <div className="text-xs text-gray-500">
+                            {[item.sizeDisplay, item.pricePerSqftDisplay, item.transactionDate]
+                              .filter(Boolean)
+                              .join(" • ") || "—"}
+                          </div>
                         </div>
                       </div>
                     ))}

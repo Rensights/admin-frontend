@@ -824,6 +824,50 @@ export interface ReportDocumentRequest {
   isActive?: boolean;
 }
 
+/** A "Listing" / "Transaction" comparable as the backend maps it for the report. */
+export interface AnalysisComparable {
+  buildingName?: string;
+  area?: string;
+  bedrooms?: string;
+  sizeDisplay?: string;
+  listedPriceDisplay?: string;
+  salePriceDisplay?: string;
+  pricePerSqftDisplay?: string;
+  listingUrl?: string;
+  transactionDate?: string;
+}
+
+/**
+ * The analysis module's payload mapped to the shape the user's report renders
+ * (backend: AnalysisResultMapper). Values arrive display-ready — show them as they are.
+ */
+export interface AnalysisReportView {
+  buildingName?: string;
+  area?: string;
+  city?: string;
+  bedrooms?: string;
+  size?: string;
+  buildingStatus?: string;
+  marketGapPercentage?: string;
+  marketDirectionLabel?: string;
+  rentalYield?: string;
+  listedPrice?: string;
+  estimateRange?: string;
+  potentialSavings?: string;
+  pricePerSqft?: string;
+  marketPosition?: string;
+  dubaiComparison?: string;
+  valuationWarning?: { title?: string; message?: string } | null;
+  furnishing?: string;
+  developer?: string;
+  view?: string;
+  serviceCharge?: string;
+  nearestLandmark?: string;
+  buildingFeatures?: string;
+  listingComparables?: AnalysisComparable[];
+  transactionComparables?: AnalysisComparable[];
+}
+
 export interface AnalysisRequest {
   id: string;
   userId?: string;
@@ -853,7 +897,9 @@ export interface AnalysisRequest {
   additionalNotes?: string;
   filePaths?: string[];
   analysisId?: string;
+  /** The raw module payload; the review screen still reads its admin-only fields from here. */
   analysisResult?: any;
+  analysis?: AnalysisReportView | null;
   status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   createdAt: string;
   updatedAt: string;
