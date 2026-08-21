@@ -138,6 +138,20 @@ class AdminApiClient {
     });
   }
 
+  /**
+   * Permanently erase a user account (GDPR right to erasure). Irreversible.
+   *
+   * The admin backend delegates to the main backend, which cancels any Stripe subscription
+   * immediately (no refund), deletes the personal data and uploaded documents, and keeps the
+   * invoices without personal details. Fails without deleting anything if billing cannot be
+   * cancelled.
+   */
+  async deleteUser(userId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/api/admin/users/${userId}`, {
+      method: 'DELETE',
+    });
+  }
+
   async getUserSubscriptions(userId: string): Promise<Subscription[]> {
     return this.request<Subscription[]>(`/api/admin/users/${userId}/subscriptions`);
   }

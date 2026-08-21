@@ -25,6 +25,11 @@ export default function UserDetailPage() {
   const [activityTimeline, setActivityTimeline] = useState<ActivityTimelineItem[]>([]);
   const [loginHistoryLoading, setLoginHistoryLoading] = useState(false);
   const [loginHistoryError, setLoginHistoryError] = useState<string | null>(null);
+  // Erasure: irreversible, so the admin retypes the account's email before the button arms.
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmEmail, setDeleteConfirmEmail] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -96,6 +101,29 @@ export default function UserDetailPage() {
       setError(error.message || "Failed to update user");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const closeDeleteModal = () => {
+    if (deleting) return;
+    setShowDeleteModal(false);
+    setDeleteConfirmEmail("");
+    setDeleteError(null);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!user) return;
+
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await adminApiClient.deleteUser(user.id);
+      router.push("/users/list");
+    } catch (error: any) {
+      // Most useful failure here is "billing could not be cancelled, nothing was deleted",
+      // which the main backend passes back verbatim.
+      setDeleteError(error.message || "Failed to delete this account");
+      setDeleting(false);
     }
   };
 
@@ -452,6 +480,81 @@ export default function UserDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Danger zone — kept at the bottom and visually separate from the editable fields. */}
+      <div className="rounded-2xl border border-error-200 bg-white dark:border-error-500/30 dark:bg-white/[0.03] p-6 mt-6">
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Delete Account</h2>
+        <p className="mt-1 mb-4 text-sm text-gray-500 dark:text-gray-400">
+          Permanently erase this account under the user&apos;s right to erasure. Any subscription is
+          cancelled immediately with no refund, personal data and uploaded documents are deleted,
+          and invoices are kept without personal details. This cannot be undone.
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowDeleteModal(true)}
+          className="px-4 py-2 rounded-lg text-white bg-error-500 hover:bg-error-600"
+        >
+          Delete Account
+        </button>
+      </div>
+
+      {showDeleteModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/60 p-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 dark:bg-gray-900">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white/90">
+              Permanently delete this account?
+            </h3>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              This erases {user.email} and cannot be undone. If billing cannot be cancelled,
+              nothing is deleted and you can retry.
+            </p>
+
+            <label className="mt-4 block text-sm text-gray-700 dark:text-gray-300">
+              Type <span className="font-semibold">{user.email}</span> to confirm:
+            </label>
+            <input
+              type="email"
+              value={deleteConfirmEmail}
+              onChange={(e) => setDeleteConfirmEmail(e.target.value)}
+              disabled={deleting}
+              autoComplete="off"
+              className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-error-500 focus:outline-none dark:border-gray-800 dark:bg-gray-950 dark:text-white/90"
+            />
+
+            {deleteError && (
+              <div className="mt-3 rounded-lg bg-error-50 p-3 text-sm text-error-600 dark:bg-error-500/10 dark:text-error-400">
+                {deleteError}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeDeleteModal}
+                disabled={deleting}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-60 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteUser}
+                disabled={
+                  deleting ||
+                  deleteConfirmEmail.trim().toLowerCase() !== (user.email || "").toLowerCase()
+                }
+                className="px-4 py-2 rounded-lg text-white bg-error-500 hover:bg-error-600 disabled:opacity-60"
+              >
+                {deleting ? "Deleting..." : "Delete permanently"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
