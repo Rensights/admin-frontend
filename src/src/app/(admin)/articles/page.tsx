@@ -173,6 +173,91 @@ export default function ArticlesAdminPage() {
         </button>
       </div>
 
+      {/* Category management. Sits directly under the page header: it was previously below the
+          article table, where the list pushed it off screen and nobody found it. */}
+      <div className="mb-6 rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-6">
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Categories</h2>
+        <p className="mt-1 mb-4 text-sm text-gray-500 dark:text-gray-400">
+          These become the filter buttons on the public Insights page. The colour is used for the
+          tag shown on each article card.
+        </p>
+
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className="block text-xs uppercase text-gray-400 mb-1">Name</label>
+            <input
+              type="text"
+              value={newCategory.label}
+              onChange={(e) => setNewCategory({ ...newCategory, label: e.target.value })}
+              placeholder="e.g. Investor Guides"
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-xs uppercase text-gray-400 mb-1">Colour</label>
+            <input
+              type="color"
+              value={newCategory.color}
+              onChange={(e) => setNewCategory({ ...newCategory, color: e.target.value })}
+              className="h-10 w-16 rounded-lg border border-gray-300 dark:border-gray-600"
+            />
+          </div>
+          <button
+            type="button"
+            disabled={savingCategory || !newCategory.label.trim()}
+            onClick={async () => {
+              setSavingCategory(true);
+              setError(null);
+              try {
+                await adminApiClient.createArticleCategory({
+                  label: newCategory.label.trim(),
+                  color: newCategory.color,
+                  sortOrder: categories.length,
+                });
+                setNewCategory({ label: "", color: "#B45309" });
+                await loadData();
+              } catch (err: any) {
+                setError(err?.message || "Could not add the category");
+              } finally {
+                setSavingCategory(false);
+              }
+            }}
+            className="px-4 py-2 rounded-lg text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-60"
+          >
+            {savingCategory ? "Adding..." : "Add category"}
+          </button>
+        </div>
+
+        {categories.length > 0 && (
+          <div className="mt-5 flex flex-wrap gap-2">
+            {categories.map((category) => (
+              <span
+                key={category.id}
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm text-white"
+                style={{ backgroundColor: category.color || "#B45309" }}
+              >
+                {category.label}
+                <button
+                  type="button"
+                  title={`Delete ${category.label}`}
+                  onClick={async () => {
+                    // Deleting also detaches it from every article that carried it.
+                    try {
+                      await adminApiClient.deleteArticleCategory(category.id);
+                      await loadData();
+                    } catch (err: any) {
+                      setError(err?.message || "Could not delete the category");
+                    }
+                  }}
+                  className="opacity-80 hover:opacity-100"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
       {error && (
         <div className="p-4 mb-4 text-sm text-red-600 bg-red-50 rounded-lg dark:bg-red-500/10 dark:text-red-400">
           {error}
@@ -467,91 +552,6 @@ export default function ArticlesAdminPage() {
         </div>
       </div>
 
-      {/* Category management — kept on this page rather than its own, since categories only
-          exist to organise these articles. */}
-      <div className="mt-6 rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-6">
-        <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Categories</h2>
-        <p className="mt-1 mb-4 text-sm text-gray-500 dark:text-gray-400">
-          These become the filter buttons on the public Insights page. The colour is used for the
-          tag shown on each article card.
-        </p>
-
-        <div className="flex flex-wrap items-end gap-3">
-          <div>
-            <label className="block text-xs uppercase text-gray-400 mb-1">Name</label>
-            <input
-              type="text"
-              value={newCategory.label}
-              onChange={(e) => setNewCategory({ ...newCategory, label: e.target.value })}
-              placeholder="e.g. Investor Guides"
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            />
-          </div>
-          <div>
-            <label className="block text-xs uppercase text-gray-400 mb-1">Colour</label>
-            <input
-              type="color"
-              value={newCategory.color}
-              onChange={(e) => setNewCategory({ ...newCategory, color: e.target.value })}
-              className="h-10 w-16 rounded-lg border border-gray-300 dark:border-gray-600"
-            />
-          </div>
-          <button
-            type="button"
-            disabled={savingCategory || !newCategory.label.trim()}
-            onClick={async () => {
-              setSavingCategory(true);
-              setError(null);
-              try {
-                await adminApiClient.createArticleCategory({
-                  label: newCategory.label.trim(),
-                  color: newCategory.color,
-                  sortOrder: categories.length,
-                });
-                setNewCategory({ label: "", color: "#B45309" });
-                await loadData();
-              } catch (err: any) {
-                setError(err?.message || "Could not add the category");
-              } finally {
-                setSavingCategory(false);
-              }
-            }}
-            className="px-4 py-2 rounded-lg text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-60"
-          >
-            {savingCategory ? "Adding..." : "Add category"}
-          </button>
-        </div>
-
-        {categories.length > 0 && (
-          <div className="mt-5 flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <span
-                key={category.id}
-                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm text-white"
-                style={{ backgroundColor: category.color || "#B45309" }}
-              >
-                {category.label}
-                <button
-                  type="button"
-                  title={`Delete ${category.label}`}
-                  onClick={async () => {
-                    // Deleting also detaches it from every article that carried it.
-                    try {
-                      await adminApiClient.deleteArticleCategory(category.id);
-                      await loadData();
-                    } catch (err: any) {
-                      setError(err?.message || "Could not delete the category");
-                    }
-                  }}
-                  className="opacity-80 hover:opacity-100"
-                >
-                  ×
-                </button>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
