@@ -146,6 +146,35 @@ class AdminApiClient {
    * invoices without personal details. Fails without deleting anything if billing cannot be
    * cancelled.
    */
+  // Building catalogue — feeds the type-ahead on the analysis request form
+  async getBuildings(page = 0, size = 25, search = ''): Promise<PaginatedResponse<BuildingRow>> {
+    const params = new URLSearchParams({ page: String(page), size: String(size) });
+    if (search) params.set('search', search);
+    return this.request<PaginatedResponse<BuildingRow>>(`/api/admin/buildings?${params.toString()}`);
+  }
+
+  /**
+   * Upload a CSV of buildings.
+   *
+   * `replaceExisting` wipes the catalogue first — use it when the file is the new full list
+   * rather than an addition. Merging (the default) matches on name + area, so re-uploading a
+   * corrected file updates rows instead of duplicating them.
+   */
+  async importBuildings(file: File, replaceExisting: boolean): Promise<BuildingImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.request<BuildingImportResult>(
+      `/api/admin/buildings/import?replaceExisting=${replaceExisting}`,
+      { method: 'POST', body: formData }
+    );
+  }
+
+  async deleteBuilding(buildingId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/api/admin/buildings/${buildingId}`, {
+      method: 'DELETE',
+    });
+  }
+
   async deleteUser(userId: string): Promise<{ message: string }> {
     return this.request<{ message: string }>(`/api/admin/users/${userId}`, {
       method: 'DELETE',
@@ -847,6 +876,25 @@ export interface ReportDocumentRequest {
   displayOrder: number;
   languageCode: string;
   isActive?: boolean;
+}
+
+/** A row in the building catalogue that feeds the analysis request form's type-ahead. */
+export interface BuildingRow {
+  id: string;
+  name: string;
+  area?: string | null;
+  city?: string | null;
+  developer?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** What a CSV import did, so the admin sees more than "done". */
+export interface BuildingImportResult {
+  created: number;
+  updated: number;
+  skipped: number;
+  problems: string[];
 }
 
 /** A "Listing" / "Transaction" comparable as the backend maps it for the report. */
