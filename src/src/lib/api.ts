@@ -169,6 +169,36 @@ class AdminApiClient {
     });
   }
 
+  // Area list — the district dropdown on the analysis request form
+  async getAreas(page = 0, size = 25, search = ''): Promise<PaginatedResponse<AreaRow>> {
+    const params = new URLSearchParams({ page: String(page), size: String(size) });
+    if (search) params.set('search', search);
+    return this.request<PaginatedResponse<AreaRow>>(`/api/admin/areas?${params.toString()}`);
+  }
+
+  /** See importBuildings — same file handling, same replaceExisting semantics. */
+  async importAreas(file: File, replaceExisting: boolean): Promise<AreaImportResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.request<AreaImportResult>(
+      `/api/admin/areas/import?replaceExisting=${replaceExisting}`,
+      { method: 'POST', body: formData }
+    );
+  }
+
+  async createArea(name: string): Promise<AreaRow> {
+    return this.request<AreaRow>(`/api/admin/areas`, {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+  }
+
+  async deleteArea(areaId: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/api/admin/areas/${areaId}`, {
+      method: 'DELETE',
+    });
+  }
+
   async deleteBuilding(buildingId: string): Promise<{ message: string }> {
     return this.request<{ message: string }>(`/api/admin/buildings/${buildingId}`, {
       method: 'DELETE',
@@ -910,6 +940,21 @@ export interface ReportDocumentRequest {
   displayOrder: number;
   languageCode: string;
   isActive?: boolean;
+}
+
+/** A row in the area list behind the analysis request form's district dropdown. */
+export interface AreaRow {
+  id: string;
+  name: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** What an area CSV import did. Same shape as the building one. */
+export interface AreaImportResult {
+  created: number;
+  skipped: number;
+  problems: string[];
 }
 
 /** A row in the building catalogue that feeds the analysis request form's type-ahead. */

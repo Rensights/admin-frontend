@@ -51,6 +51,11 @@ const navItems: NavItem[] = [
     path: "/buildings",
   },
   {
+    icon: <ListIcon />,
+    name: "Areas",
+    path: "/areas",
+  },
+  {
     icon: <DocsIcon />,
     name: "Translations",
     subItems: [
