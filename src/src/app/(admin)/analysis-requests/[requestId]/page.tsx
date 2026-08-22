@@ -176,6 +176,12 @@ export default function AnalysisRequestDetailPage() {
   const listingComparables = analysis.listingComparables ?? [];
   const transactionComparables = analysis.transactionComparables ?? [];
   const valuationWarning = analysis.valuationWarning || null;
+  // Collected rather than rendered one by one: today the module raises a single valuation
+  // warning, and anything it adds later belongs in the same box instead of a new one.
+  const warnings = [valuationWarning].filter(
+    (warning): warning is { title?: string; message?: string } =>
+      Boolean(warning && (warning.title || warning.message))
+  );
   const marketGap = [analysis.marketGapPercentage, analysis.marketDirectionLabel]
     .filter(Boolean)
     .join(" ");
@@ -376,19 +382,6 @@ export default function AnalysisRequestDetailPage() {
               </div>
             </div>
 
-            {valuationWarning && (
-              <div className="rounded-lg border border-warning-200 bg-warning-50 p-4 dark:border-warning-500/30 dark:bg-warning-500/10">
-                <div className="text-sm font-semibold text-warning-700 dark:text-warning-400">
-                  ⚠️ {formatValue(valuationWarning.title)}
-                </div>
-                {valuationWarning.message && (
-                  <p className="mt-1 text-sm text-warning-700/90 dark:text-warning-400/90">
-                    {valuationWarning.message}
-                  </p>
-                )}
-              </div>
-            )}
-
             <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-800 dark:bg-gray-900">
               <h3 className="text-sm font-semibold text-gray-900 dark:text-white/90 mb-4">Price Analysis</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
@@ -417,6 +410,26 @@ export default function AnalysisRequestDetailPage() {
                   <div className="mt-1 font-semibold">{formatValue(raw.market_average_price_per_sqft)}</div>
                 </div>
               </div>
+
+              {/* One box for every warning the module raises about this valuation. It sits inside
+                  Price Analysis because it qualifies these figures; keeping it to a single box
+                  means a second warning field later joins this list instead of adding a card. */}
+              {warnings.length > 0 && (
+                <div className="mt-5 rounded-lg border border-warning-200 bg-warning-50 p-4 dark:border-warning-500/30 dark:bg-warning-500/10">
+                  <div className="text-sm font-semibold text-warning-700 dark:text-warning-400">
+                    ⚠️ Warnings
+                  </div>
+                  <ul className="mt-2 space-y-2">
+                    {warnings.map((warning, index) => (
+                      <li key={index} className="text-sm text-warning-700/90 dark:text-warning-400/90">
+                        {warning.title && <span className="font-medium">{warning.title}</span>}
+                        {warning.title && warning.message && " — "}
+                        {warning.message}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
