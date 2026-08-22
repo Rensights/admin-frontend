@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { adminApiClient, Article } from "@/lib/api";
+import { adminApiClient, Article, ArticleCategory } from "@/lib/api";
 import RichTextEditor from "@/components/form/RichTextEditor";
 
 const emptyForm: Partial<Article> = {
@@ -13,6 +13,7 @@ const emptyForm: Partial<Article> = {
   coverImage: "",
   publishedAt: "",
   isActive: true,
+  categoryIds: [],
 };
 
 export default function ArticlesAdminPage() {
@@ -27,17 +28,23 @@ export default function ArticlesAdminPage() {
   const [form, setForm] = useState<Partial<Article>>(emptyForm);
   const [contentMode, setContentMode] = useState<"rich" | "html">("rich");
   const [coverImageUploading, setCoverImageUploading] = useState(false);
+  // Categories drive the filter pills on the public Insights page.
+  const [categories, setCategories] = useState<ArticleCategory[]>([]);
+  const [newCategory, setNewCategory] = useState({ label: "", color: "#B45309" });
+  const [savingCategory, setSavingCategory] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [list, settings] = await Promise.all([
+      const [list, settings, cats] = await Promise.all([
         adminApiClient.getArticles(),
         adminApiClient.getArticlesEnabled(),
+        adminApiClient.getArticleCategories().catch(() => [] as ArticleCategory[]),
       ]);
       setArticles(list);
       setEnabled(settings.enabled);
+      setCategories(cats);
     } catch (err: any) {
       setError(err.message || "Failed to load insights");
       if (err.message?.includes("401") || err.message?.includes("Unauthorized")) {
@@ -95,6 +102,7 @@ export default function ArticlesAdminPage() {
       coverImage: article.coverImage || "",
       publishedAt: article.publishedAt || "",
       isActive: article.isActive,
+      categoryIds: (article.categories || []).map((c) => c.id),
     });
   };
 
@@ -297,6 +305,45 @@ export default function ArticlesAdminPage() {
               />
             </div>
             <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Categories
+              </label>
+              {categories.length === 0 ? (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  No categories yet — add one below the article list.
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {categories.map((category) => {
+                    const selected = (form.categoryIds || []).includes(category.id);
+                    return (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() => {
+                          const current = form.categoryIds || [];
+                          setForm({
+                            ...form,
+                            categoryIds: selected
+                              ? current.filter((id) => id !== category.id)
+                              : [...current, category.id],
+                          });
+                        }}
+                        className={`rounded-full border px-3 py-1.5 text-sm ${
+                          selected
+                            ? "border-transparent text-white"
+                            : "border-gray-300 text-gray-700 dark:border-gray-600 dark:text-gray-300"
+                        }`}
+                        style={selected ? { backgroundColor: category.color || "#B45309" } : undefined}
+                      >
+                        {category.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="md:col-span-2">
               <div className="mb-1 flex items-center justify-between">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                   Content
@@ -418,6 +465,92 @@ export default function ArticlesAdminPage() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Category management — kept on this page rather than its own, since categories only
+          exist to organise these articles. */}
+      <div className="mt-6 rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-6">
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Categories</h2>
+        <p className="mt-1 mb-4 text-sm text-gray-500 dark:text-gray-400">
+          These become the filter buttons on the public Insights page. The colour is used for the
+          tag shown on each article card.
+        </p>
+
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className="block text-xs uppercase text-gray-400 mb-1">Name</label>
+            <input
+              type="text"
+              value={newCategory.label}
+              onChange={(e) => setNewCategory({ ...newCategory, label: e.target.value })}
+              placeholder="e.g. Investor Guides"
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-xs uppercase text-gray-400 mb-1">Colour</label>
+            <input
+              type="color"
+              value={newCategory.color}
+              onChange={(e) => setNewCategory({ ...newCategory, color: e.target.value })}
+              className="h-10 w-16 rounded-lg border border-gray-300 dark:border-gray-600"
+            />
+          </div>
+          <button
+            type="button"
+            disabled={savingCategory || !newCategory.label.trim()}
+            onClick={async () => {
+              setSavingCategory(true);
+              setError(null);
+              try {
+                await adminApiClient.createArticleCategory({
+                  label: newCategory.label.trim(),
+                  color: newCategory.color,
+                  sortOrder: categories.length,
+                });
+                setNewCategory({ label: "", color: "#B45309" });
+                await loadData();
+              } catch (err: any) {
+                setError(err?.message || "Could not add the category");
+              } finally {
+                setSavingCategory(false);
+              }
+            }}
+            className="px-4 py-2 rounded-lg text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-60"
+          >
+            {savingCategory ? "Adding..." : "Add category"}
+          </button>
+        </div>
+
+        {categories.length > 0 && (
+          <div className="mt-5 flex flex-wrap gap-2">
+            {categories.map((category) => (
+              <span
+                key={category.id}
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm text-white"
+                style={{ backgroundColor: category.color || "#B45309" }}
+              >
+                {category.label}
+                <button
+                  type="button"
+                  title={`Delete ${category.label}`}
+                  onClick={async () => {
+                    // Deleting also detaches it from every article that carried it.
+                    try {
+                      await adminApiClient.deleteArticleCategory(category.id);
+                      await loadData();
+                    } catch (err: any) {
+                      setError(err?.message || "Could not delete the category");
+                    }
+                  }}
+                  className="opacity-80 hover:opacity-100"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

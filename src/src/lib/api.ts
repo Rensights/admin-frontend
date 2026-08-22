@@ -138,14 +138,6 @@ class AdminApiClient {
     });
   }
 
-  /**
-   * Permanently erase a user account (GDPR right to erasure). Irreversible.
-   *
-   * The admin backend delegates to the main backend, which cancels any Stripe subscription
-   * immediately (no refund), deletes the personal data and uploaded documents, and keeps the
-   * invoices without personal details. Fails without deleting anything if billing cannot be
-   * cancelled.
-   */
   // Building catalogue — feeds the type-ahead on the analysis request form
   async getBuildings(page = 0, size = 25, search = ''): Promise<PaginatedResponse<BuildingRow>> {
     const params = new URLSearchParams({ page: String(page), size: String(size) });
@@ -175,6 +167,14 @@ class AdminApiClient {
     });
   }
 
+  /**
+   * Permanently erase a user account (GDPR right to erasure). Irreversible.
+   *
+   * The admin backend delegates to the main backend, which cancels any Stripe subscription
+   * immediately (no refund), deletes the personal data and uploaded documents, and keeps the
+   * invoices without personal details. Fails without deleting anything if billing cannot be
+   * cancelled.
+   */
   async deleteUser(userId: string): Promise<{ message: string }> {
     return this.request<{ message: string }>(`/api/admin/users/${userId}`, {
       method: 'DELETE',
@@ -614,6 +614,32 @@ class AdminApiClient {
     return `${PUBLIC_SITE_URL}/api/articles/images/${result.filename}`;
   }
 
+  // Article categories
+  async getArticleCategories(): Promise<ArticleCategory[]> {
+    return this.request<ArticleCategory[]>(`/api/admin/article-categories`);
+  }
+
+  async createArticleCategory(payload: Partial<ArticleCategory>): Promise<ArticleCategory> {
+    return this.request<ArticleCategory>(`/api/admin/article-categories`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async updateArticleCategory(id: string, payload: Partial<ArticleCategory>): Promise<ArticleCategory> {
+    return this.request<ArticleCategory>(`/api/admin/article-categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  /** Deleting a category also removes it from every article that carried it. */
+  async deleteArticleCategory(id: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/api/admin/article-categories/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
   async createArticle(payload: Partial<Article>): Promise<Article> {
     const created = await this.request<any>(`/api/admin/articles/create`, {
       method: "POST",
@@ -1005,6 +1031,19 @@ export interface Article {
   coverImage?: string;
   publishedAt?: string;
   isActive: boolean;
+  /** Categories the article is filed under; returned by the API. */
+  categories?: ArticleCategory[];
+  /** Write-only: the ids to file it under. Omit to leave the existing set untouched. */
+  categoryIds?: string[];
+}
+
+/** A category articles can be filed under — becomes a filter pill on the public Insights page. */
+export interface ArticleCategory {
+  id: string;
+  slug: string;
+  label: string;
+  color?: string;
+  sortOrder?: number;
 }
 
 export interface PaginatedResponse<T> {
