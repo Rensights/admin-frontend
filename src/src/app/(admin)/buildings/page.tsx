@@ -6,9 +6,8 @@ import { adminApiClient, BuildingRow, BuildingImportResult } from "@/lib/api";
 /**
  * The building catalogue that powers the type-ahead on the analysis request form.
  *
- * Maintained by CSV import rather than row-by-row entry: the list runs to thousands of towers
- * and arrives from external sources. Individual rows can still be deleted here for one-off
- * corrections.
+ * Holds names and nothing else. Bulk lists arrive by CSV — they run to thousands of towers and
+ * come from external sources — while a single missing building can be typed in directly.
  */
 export default function BuildingsPage() {
   const [buildings, setBuildings] = useState<BuildingRow[]>([]);
@@ -22,6 +21,9 @@ export default function BuildingsPage() {
   const [replaceExisting, setReplaceExisting] = useState(false);
   const [result, setResult] = useState<BuildingImportResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [newName, setNewName] = useState("");
+  const [adding, setAdding] = useState(false);
 
   const pageSize = 25;
 
@@ -66,6 +68,23 @@ export default function BuildingsPage() {
     }
   };
 
+  const handleAdd = async () => {
+    const name = newName.trim();
+    if (!name) return;
+
+    setAdding(true);
+    setError(null);
+    try {
+      await adminApiClient.createBuilding(name);
+      setNewName("");
+      await load();
+    } catch (err: any) {
+      setError(err?.message || "Could not add the building");
+    } finally {
+      setAdding(false);
+    }
+  };
+
   const handleDelete = async (building: BuildingRow) => {
     try {
       await adminApiClient.deleteBuilding(building.id);
@@ -82,8 +101,8 @@ export default function BuildingsPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800 dark:text-white/90">Buildings</h1>
         <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          Suggestions shown to users typing a building name on the analysis request form. Users can
-          still enter a building that is not on this list.
+          Names suggested to users typing a building on the analysis request form — names only,
+          nothing else is stored. Users can still enter a building that is not on this list.
         </p>
       </div>
 
@@ -97,10 +116,10 @@ export default function BuildingsPage() {
       <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Import CSV</h2>
         <p className="mt-1 mb-4 text-sm text-gray-500 dark:text-gray-400">
-          A header row is expected. The name column may be called <code>name</code>,{" "}
-          <code>building</code>, <code>building_name</code> or <code>project</code>;{" "}
-          <code>area</code>, <code>city</code> and <code>developer</code> are optional. Comma and
-          semicolon files both work. A file with just a list of names, and no header, also works.
+          Only the building name is read. If the first line names that column (<code>name</code>,{" "}
+          <code>building</code>, <code>building_name</code>, <code>project</code>) it is used as a
+          header; otherwise the file is treated as a plain list of names. Any other columns are
+          ignored. Comma and semicolon files both work.
         </p>
 
         <input
@@ -118,7 +137,7 @@ export default function BuildingsPage() {
             onChange={(e) => setReplaceExisting(e.target.checked)}
             disabled={importing}
           />
-          Replace the whole catalogue (otherwise rows are merged by name and area)
+          Replace the whole catalogue (otherwise names already in the list are skipped)
         </label>
 
         <button
@@ -133,7 +152,7 @@ export default function BuildingsPage() {
         {result && (
           <div className="mt-4 rounded-lg border border-gray-200 p-4 text-sm dark:border-gray-800">
             <div className="text-gray-800 dark:text-white/90">
-              {result.created} added · {result.updated} updated · {result.skipped} skipped
+              {result.created} added · {result.skipped} skipped
             </div>
             {result.problems.length > 0 && (
               <ul className="mt-2 list-disc pl-5 text-error-600 dark:text-error-400">
@@ -144,6 +163,32 @@ export default function BuildingsPage() {
             )}
           </div>
         )}
+      </div>
+
+      {/* Manual add — for the one-off building that is not worth a CSV. */}
+      <div className="rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] p-6 mb-6">
+        <h2 className="text-lg font-semibold text-gray-800 dark:text-white/90">Add a building</h2>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <input
+            type="text"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleAdd();
+            }}
+            placeholder="Building name"
+            disabled={adding}
+            className="min-w-[280px] flex-1 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand-500 focus:outline-none dark:border-gray-800 dark:bg-gray-950 dark:text-white/90"
+          />
+          <button
+            type="button"
+            onClick={handleAdd}
+            disabled={adding || !newName.trim()}
+            className="px-4 py-2 rounded-lg text-white bg-brand-500 hover:bg-brand-600 disabled:opacity-60"
+          >
+            {adding ? "Adding..." : "Add"}
+          </button>
+        </div>
       </div>
 
       {/* Catalogue */}
@@ -159,7 +204,7 @@ export default function BuildingsPage() {
               setPage(0);
               setSearch(e.target.value);
             }}
-            placeholder="Search name or area"
+            placeholder="Search buildings"
             className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-brand-500 focus:outline-none dark:border-gray-800 dark:bg-gray-950 dark:text-white/90"
           />
         </div>
@@ -176,9 +221,6 @@ export default function BuildingsPage() {
               <thead className="text-xs uppercase text-gray-400">
                 <tr>
                   <th className="py-2">Name</th>
-                  <th className="py-2">Area</th>
-                  <th className="py-2">City</th>
-                  <th className="py-2">Developer</th>
                   <th className="py-2"></th>
                 </tr>
               </thead>
@@ -186,11 +228,6 @@ export default function BuildingsPage() {
                 {buildings.map((building) => (
                   <tr key={building.id} className="border-t border-gray-100 dark:border-gray-800">
                     <td className="py-3 text-gray-800 dark:text-white/90">{building.name}</td>
-                    <td className="py-3 text-gray-500 dark:text-gray-400">{building.area || "—"}</td>
-                    <td className="py-3 text-gray-500 dark:text-gray-400">{building.city || "—"}</td>
-                    <td className="py-3 text-gray-500 dark:text-gray-400">
-                      {building.developer || "—"}
-                    </td>
                     <td className="py-3 text-right">
                       <button
                         type="button"

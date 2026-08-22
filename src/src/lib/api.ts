@@ -149,8 +149,8 @@ class AdminApiClient {
    * Upload a CSV of buildings.
    *
    * `replaceExisting` wipes the catalogue first — use it when the file is the new full list
-   * rather than an addition. Merging (the default) matches on name + area, so re-uploading a
-   * corrected file updates rows instead of duplicating them.
+   * rather than an addition. Otherwise names already present are skipped, so re-uploading the
+   * same file adds nothing.
    */
   async importBuildings(file: File, replaceExisting: boolean): Promise<BuildingImportResult> {
     const formData = new FormData();
@@ -159,6 +159,14 @@ class AdminApiClient {
       `/api/admin/buildings/import?replaceExisting=${replaceExisting}`,
       { method: 'POST', body: formData }
     );
+  }
+
+  /** Add one building by hand. Rejected if the name is already in the catalogue. */
+  async createBuilding(name: string): Promise<BuildingRow> {
+    return this.request<BuildingRow>(`/api/admin/buildings`, {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
   }
 
   async deleteBuilding(buildingId: string): Promise<{ message: string }> {
@@ -908,9 +916,6 @@ export interface ReportDocumentRequest {
 export interface BuildingRow {
   id: string;
   name: string;
-  area?: string | null;
-  city?: string | null;
-  developer?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -918,7 +923,6 @@ export interface BuildingRow {
 /** What a CSV import did, so the admin sees more than "done". */
 export interface BuildingImportResult {
   created: number;
-  updated: number;
   skipped: number;
   problems: string[];
 }
